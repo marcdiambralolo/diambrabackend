@@ -1,0 +1,18 @@
+{
+  "offerings": [
+    { "name": "Poulet blanc", "price": 200, "priceUSD": 8.9, "category": "animal", "icon": "🐓", "description": "Symbole de pureté et d'harmonie" },
+    { "name": "Poulet noir", "price": 200, "priceUSD": 12.4, "category": "animal", "icon": "🐔", "description": "Pour éloigner les énergies négatives" },
+    { "name": "Coq rouge", "price": 200, "priceUSD": 16.0, "category": "animal", "icon": "🐓", "description": "Force et protection spirituelle" },
+    { "name": "Mouton blanc", "price": 200, "priceUSD": 62.1, "category": "animal", "icon": "🐑", "description": "Paix et bénédictions familiales" },
+    { "name": "Mouton noir", "price": 200, "priceUSD": 71.0, "category": "animal", "icon": "🐑", "description": "Purification et renaissance" },
+    { "name": "Bœuf", "price": 200, "priceUSD": 620.6, "category": "animal", "icon": "🐂", "description": "Grande cérémonie et prospérité" },
+    { "name": "Chameau", "price": 200, "priceUSD": 1064.6, "category": "animal", "icon": "🐪", "description": "Endurance et sagesse ancestrale" },
+    { "name": "Bol de mil", "price": 200, "priceUSD": 4.4, "category": "vegetal", "icon": "🌾", "description": "Nourriture sacrée des ancêtres" },
+    { "name": "Bol de maïs", "price": 200, "priceUSD": 3.5, "category": "vegetal", "icon": "🌽", "description": "Abondance et fertilité" },
+    { "name": "Bol de riz", "price": 200, "priceUSD": 5.3, "category": "vegetal", "icon": "🍚", "description": "Richesse et satisfaction" },
+    { "name": "Cola rouge", "price": 200, "priceUSD": 1.8, "category": "vegetal", "icon": "🔴", "description": "Communication avec les esprits" },
+    { "name": "Cola blanche", "price": 200, "priceUSD": 2.1, "category": "vegetal", "icon": "⚪", "description": "Pureté et clarté spirituelle" },
+    { "name": "Vin de palme", "price": 200, "priceUSD": 2.7, "category": "beverage", "icon": "🍷", "description": "Libation traditionnelle" },
+    { "name": "Liqueur", "price": 200, "priceUSD": 6.2, "category": "beverage", "icon": "🥃", "description": "Offrande de prestige" }
+  ]
+}

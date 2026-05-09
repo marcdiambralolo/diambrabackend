@@ -1,0 +1,340 @@
+{
+  "CARTE_DU_CIEL_ET_5_PORTES": {
+    "title": "CARTE DU CIEL + LES 5 PORTES",
+    "description": "Calcul de la carte du ciel complète et analyse des 5 portes (Soleil, Lune, Ascendant, Descendant, Milieu du Ciel)",
+    "consultationChoices": [
+      {
+        "id": "carte_du_ciel_complete",
+        "title": "CARTE DU CIEL COMPLÈTE",
+        "prompt": "CARTE DU CIEL COMPLÈTE (MOTEUR DE CALCUL NASA JPL)",
+        "type": "calcul"
+      },
+      {
+        "id": "mon_signe_solaire",
+        "title": "MON SIGNE SOLAIRE",
+        "prompt": "MON SIGNE SOLAIRE",
+        "type": "analyse"
+      },
+      {
+        "id": "mon_signe_lunaire",
+        "title": "MON SIGNE LUNAIRE",
+        "prompt": "MON SIGNE LUNAIRE",
+        "type": "analyse"
+      },
+      {
+        "id": "mon_ascendant",
+        "title": "MON ASCENDANT",
+        "prompt": "MON ASCENDANT",
+        "type": "analyse"
+      },
+      {
+        "id": "mon_descendant",
+        "title": "MON DESCENDANT",
+        "prompt": "MON DESCENDANT",
+        "type": "analyse"
+      },
+      {
+        "id": "mon_milieu_du_ciel",
+        "title": "MON MILIEU DU CIEL",
+        "prompt": "MON MILIEU DU CIEL",
+        "type": "analyse"
+      }
+    ]
+  },
+  "MA_VIE_PERSONNELLE": {
+    "title": "MA VIE PERSONNELLE",
+    "description": "Analyses personnelles approfondies",
+    "consultationChoices": [
+      {
+        "id": "les_4_piliers",
+        "title": "LES 4 PILIERS DE TON ÉQUILIBRE PERSONNEL",
+        "prompt": "Les 4 Piliers de ton Équilibre Personnel",
+        "type": "analyse"
+      },
+      {
+        "id": "mission_de_vie",
+        "title": "MISSION DE VIE",
+        "prompt": "Mission de Vie",
+        "type": "analyse"
+      },
+      {
+        "id": "rapport_argent",
+        "title": "TON RAPPORT À L'ARGENT ET À L'ABONDANCE",
+        "prompt": "Ton Rapport à l'Argent et à l'Abondance",
+        "type": "analyse"
+      },
+      {
+        "id": "maniere_aimer",
+        "title": "MANIÈRE D'AIMER",
+        "prompt": "MANIÈRE D'AIMER",
+        "type": "analyse"
+      },
+      {
+        "id": "darakaraka",
+        "title": "LE DARAKARAKA – TON COMPAGNON DE L'ÂME",
+        "prompt": "LE DARAKARAKA – TON COMPAGNON DE L'ÂME",
+        "type": "analyse"
+      },
+      {
+        "id": "stress_resilience",
+        "title": "STRESS & RÉSILIENCE",
+        "prompt": "STRESS & RÉSILIENCE",
+        "type": "analyse"
+      },
+      {
+        "id": "energie_sexuelle",
+        "title": "ÉNERGIE SEXUELLE",
+        "prompt": "ANALYSE ASTROLOGIQUE DE L'ÉNERGIE SEXUELLE",
+        "type": "analyse"
+      },
+      {
+        "id": "cycles_saturne",
+        "title": "LES CYCLES DE SATURNE",
+        "prompt": "ANALYSE ASTROLOGIQUE : LES CYCLES DE SATURNE",
+        "type": "cycles"
+      },
+      {
+        "id": "cycles_jupiter",
+        "title": "LES CYCLES DE JUPITER",
+        "prompt": "ANALYSE ASTROLOGIQUE : LES CYCLES DE JUPITER",
+        "type": "cycles"
+      },
+      {
+        "id": "retour_mars",
+        "title": "LE RETOUR DE MARS",
+        "prompt": "LE RETOUR DE MARS (ÉNERGIE, ACTION & CONQUÊTE)",
+        "type": "cycles"
+      },
+      {
+        "id": "cycle_uranus",
+        "title": "LE CYCLE D'URANUS",
+        "prompt": "LE CYCLE D'URANUS (LIBÉRATION, ÉVEIL & RÉINVENTION)",
+        "type": "cycles"
+      },
+      {
+        "id": "cycle_neptune",
+        "title": "LE CYCLE DE NEPTUNE",
+        "prompt": "LE CYCLE DE NEPTUNE (QUÊTE DE SENS, INTUITION & TRANSCENDANCE)",
+        "type": "cycles"
+      },
+      {
+        "id": "cycle_pluton",
+        "title": "LE CYCLE DE PLUTON",
+        "prompt": "LE CYCLE DE PLUTON (MÉTAMORPHOSE, POUVOIR & RENAISSANCE)",
+        "type": "cycles"
+      },
+      {
+        "id": "retour_chiron",
+        "title": "LE RETOUR DE CHIRON",
+        "prompt": "LE RETOUR DE CHIRON (VULNÉRABILITÉ, SAGESSE & GUÉRISON)",
+        "type": "cycles"
+      },
+      {
+        "id": "revelation_talents",
+        "title": "RÉVÉLATION DES TALENTS INNÉS",
+        "prompt": "Révélation des Talents Innés",
+        "type": "analyse"
+      },
+      {
+        "id": "liberation_blessures",
+        "title": "LIBÉRATION DES BLESSURES KARMIQUES",
+        "prompt": "Libération des Blessures Karmiques",
+        "type": "analyse"
+      },
+      {
+        "id": "analyse_integrale",
+        "title": "ANALYSE INTÉGRALE DU THÈME NATAL",
+        "prompt": "ANALYSE INTÉGRALE DU THÈME NATAL",
+        "type": "complete"
+      }
+    ]
+  },
+  "FAMILLE_AMITIE_ET_COUPLE": {
+    "title": "FAMILLE, AMITIÉ ET COUPLE",
+    "description": "Analyses relationnelles",
+    "consultationChoices": [
+      {
+        "id": "relations_similitude",
+        "title": "RELATIONS DE SIMILITUDE",
+        "prompt": "RELATIONS DE SIMILITUDE (L'ÉCHO DE TON ÉLÉMENT)",
+        "type": "synastrie"
+      },
+      {
+        "id": "relations_soutien",
+        "title": "RELATIONS DE SOUTIEN ET D'ÉQUILIBRE",
+        "prompt": "RELATIONS DE SOUTIEN ET D'ÉQUILIBRE (L'ALLIANCE FERTILE)",
+        "type": "synastrie"
+      },
+      {
+        "id": "relations_defi",
+        "title": "RELATIONS DE DÉFI ET D'ÉVOLUTION",
+        "prompt": "RELATIONS DE DÉFI ET D'ÉVOLUTION (LA FRICTION SACRÉE)",
+        "type": "synastrie"
+      },
+      {
+        "id": "relations_decalage",
+        "title": "RELATIONS DE DÉCALAGE ET DE LIMITES",
+        "prompt": "RELATIONS DE DÉCALAGE ET DE LIMITES (L'ART DE LA DISTANCE JUSTE)",
+        "type": "synastrie"
+      },
+      {
+        "id": "synastrie_couple",
+        "title": "SYNASTRIE DE COUPLE",
+        "prompt": "SYNASTRIE DE COUPLE (L'ALLIANCE DES DESTINÉES)",
+        "type": "synastrie"
+      },
+      {
+        "id": "relations_karmiques",
+        "title": "RELATIONS KARMIQUES & LIENS D'ÂMES",
+        "prompt": "RELATIONS KARMIQUES & LIENS D'ÂMES (LE RENDEZ-VOUS DES ÂMES)",
+        "type": "synastrie"
+      },
+      {
+        "id": "theme_enfant",
+        "title": "THÈME ASTRAL DE L'ENFANT",
+        "prompt": "THÈME ASTRAL DE L'ENFANT",
+        "type": "analyse"
+      },
+      {
+        "id": "cycles_couple",
+        "title": "CYCLES & ÉVOLUTION DU COUPLE",
+        "prompt": "CYCLES & ÉVOLUTION DU COUPLE",
+        "type": "cycles"
+      }
+    ]
+  },
+  "MONDE_PROFESSIONNEL": {
+    "title": "MONDE PROFESSIONNEL",
+    "description": "Analyses professionnelles et carrière",
+    "consultationChoices": [
+      {
+        "id": "talents_potentiel",
+        "title": "TALENTS & POTENTIEL",
+        "prompt": "TALENTS & POTENTIEL",
+        "type": "analyse"
+      },
+      {
+        "id": "leadership_management",
+        "title": "LEADERSHIP & MANAGEMENT",
+        "prompt": "LEADERSHIP & MANAGEMENT",
+        "type": "analyse"
+      },
+      {
+        "id": "orientation_carriere",
+        "title": "ORIENTATION DE CARRIÈRE",
+        "prompt": "ORIENTATION DE CARRIÈRE",
+        "type": "analyse"
+      },
+      {
+        "id": "initier_projet",
+        "title": "INITIER ET LANCER UN PROJET",
+        "prompt": "INITIER ET LANCER UN PROJET",
+        "type": "analyse"
+      },
+      {
+        "id": "leadership_influence",
+        "title": "LEADERSHIP & INFLUENCE",
+        "prompt": "LEADERSHIP & INFLUENCE",
+        "type": "analyse"
+      },
+      {
+        "id": "synergie_equipe",
+        "title": "SYNERGIE & ALCHIMIE D'ÉQUIPE",
+        "prompt": "SYNERGIE & ALCHIMIE D'ÉQUIPE",
+        "type": "equipe"
+      }
+    ]
+  },
+  "HOROSCOPE": {
+    "title": "HOROSCOPE",
+    "description": "Prévisions et trajectoires temporelles",
+    "consultationChoices": [
+      {
+        "id": "trimestre_1",
+        "title": "TA TRAJECTOIRE TRIMESTRIELLE (JANVIER - FÉVRIER - MARS)",
+        "prompt": "TA TRAJECTOIRE TRIMESTRIELLE (JANVIER - FÉVRIER - MARS)",
+        "type": "previsionnel",
+        "periode": "Q1"
+      },
+      {
+        "id": "trimestre_2",
+        "title": "LE DÉPLOIEMENT DE TA SÈVE (AVRIL - MAI - JUIN)",
+        "prompt": "LE DÉPLOIEMENT DE TA SÈVE (AVRIL - MAI - JUIN)",
+        "type": "previsionnel",
+        "periode": "Q2"
+      },
+      {
+        "id": "trimestre_3",
+        "title": "L'ÉTÉ DE TA MATURATION (JUILLET - AOÛT - SEPTEMBRE)",
+        "prompt": "L'ÉTÉ DE TA MATURATION (JUILLET - AOÛT - SEPTEMBRE)",
+        "type": "previsionnel",
+        "periode": "Q3"
+      },
+      {
+        "id": "trimestre_4",
+        "title": "LE BILAN ET LA VISION (OCTOBRE - NOVEMBRE - DÉCEMBRE)",
+        "prompt": "LE BILAN ET LA VISION (OCTOBRE - NOVEMBRE - DÉCEMBRE)",
+        "type": "previsionnel",
+        "periode": "Q4"
+      },
+      {
+        "id": "revolution_solaire",
+        "title": "TA RÉVOLUTION SOLAIRE (LE CYCLE DES 7 PHASES)",
+        "prompt": "TA RÉVOLUTION SOLAIRE (LE CYCLE DES 7 PHASES)",
+        "type": "previsionnel",
+        "periode": "annuel"
+      }
+    ]
+  },
+  "NUMEROLOGIE_NOMBRES_PERSONNELS": {
+    "title": "LES NOMBRES PERSONNELS",
+    "description": "Analyses numériques de la personnalité",
+    "consultationChoices": [
+      {
+        "id": "chemin_de_vie",
+        "title": "LA TRAJECTOIRE DE L'ÂME (NOMBRE DU CHEMIN DE VIE)",
+        "prompt": "LA TRAJECTOIRE DE L'ÂME (NOMBRE DU CHEMIN DE VIE)",
+        "type": "numerologie"
+      },
+      {
+        "id": "nombre_expression",
+        "title": "LE SOUFFLE DE TON ÊTRE (NOMBRE D'EXPRESSION)",
+        "prompt": "LE SOUFFLE DE TON ÊTRE (NOMBRE D'EXPRESSION)",
+        "type": "numerologie"
+      },
+      {
+        "id": "nombre_ame",
+        "title": "LE CHANT DU CŒUR (NOMBRE DE L'ÂME)",
+        "prompt": "LE CHANT DU CŒUR (NOMBRE DE L'ÂME)",
+        "type": "numerologie"
+      }
+    ]
+  },
+  "NUMEROLOGIE_CYCLES_PERSONNELS": {
+    "title": "LES CYCLES PERSONNELS",
+    "description": "Prévisions numériques temporelles",
+    "consultationChoices": [
+      {
+        "id": "annee_personnelle",
+        "title": "LE CYCLE DES SAISONS (VOTRE ANNÉE PERSONNELLE)",
+        "prompt": "LE CYCLE DES SAISONS (VOTRE ANNÉE PERSONNELLE)",
+        "type": "numerologie_cycle",
+        "periode": "annuel"
+      },
+      {
+        "id": "mois_personnel",
+        "title": "LE RYTHME DU MOMENT (VOTRE MOIS PERSONNEL)",
+        "prompt": "LE RYTHME DU MOMENT (VOTRE MOIS PERSONNEL)",
+        "type": "numerologie_cycle",
+        "periode": "mensuel"
+      },
+      {
+        "id": "jour_personnel",
+        "title": "LA PULSATION DU JOUR (VOTRE JOUR PERSONNEL)",
+        "prompt": "LA PULSATION DU JOUR (VOTRE JOUR PERSONNEL)",
+        "type": "numerologie_cycle",
+        "periode": "quotidien"
+      }
+    ]
+  }
+}
