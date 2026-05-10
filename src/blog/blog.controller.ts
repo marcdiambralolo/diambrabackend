@@ -12,7 +12,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 
 const uploadDir = process.env.UPLOAD_DIR || '/var/www/uploads';
-const publicUrl = process.env.PUBLIC_UPLOAD_URL || 'https://monetoile.org/uploads';
+const publicUrl = process.env.PUBLIC_UPLOAD_URL || 'https://diambra.net/uploads';
 const blogDir = `${uploadDir}/blog`;
 
 if (!fs.existsSync(blogDir)) fs.mkdirSync(blogDir, { recursive: true, mode: 0o755 });

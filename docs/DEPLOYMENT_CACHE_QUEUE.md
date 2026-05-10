@@ -1,7 +1,7 @@
-# Déploiement Redis et Systèmes de Cache/Queue pour monetoile.org
+# Déploiement Redis et Systèmes de Cache/Queue pour diambra.net
 
 ## Objectif
-Mettre en place les services nécessaires pour la gestion du cache et des files d'attente (queue) sur le VPS hébergeant monetoile.org.
+Mettre en place les services nécessaires pour la gestion du cache et des files d'attente (queue) sur le VPS hébergeant diambra.net.
 
 ---
 

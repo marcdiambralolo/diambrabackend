@@ -32,7 +32,7 @@ export class AdminService {
 
   async createUser(createUserDto: any): Promise<Omit<User, 'password'>> {
     const { username, password, gender, phone, phoneNumber, ...rest } = createUserDto;
-    const email = `${username}@monetoile.org`;
+    const email = `${username}@diambra.net`;
 
     const existingUser = await this.userModel.findOne({ $or: [{ email }, { username }] }).exec();
     if (existingUser) {

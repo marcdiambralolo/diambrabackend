@@ -56,7 +56,7 @@ echo -e "\n${BLUE}📊 Statut de l'application:${NC}"
 pm2 status
 
 echo -e "\n${GREEN}✅ Déploiement terminé avec succès!${NC}"
-echo -e "${GREEN}API disponible sur: https://monetoile.org/api${NC}"
+echo -e "${GREEN}API disponible sur: https://diambra.net/api${NC}"
 
 # 8. Afficher les logs
 echo -e "\n${BLUE}📋 Derniers logs:${NC}"

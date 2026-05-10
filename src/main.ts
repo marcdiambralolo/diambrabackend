@@ -41,13 +41,20 @@ async function bootstrap() {
     validateCustomDecorators: true,
   }));
 
-  const baseUrl = process.env.BASE_URL || 'https://monetoile.org';
+  const baseUrl = process.env.BASE_URL || 'https://diambra.net';
   const isDev = process.env.NODE_ENV !== 'production';
 
   const allowedOrigins = [
     baseUrl,
     baseUrl.replace('https://', 'https://www.'),
   ];
+
+  const fromEnv = process.env.CORS_ORIGINS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (fromEnv?.length) {
+    allowedOrigins.push(...fromEnv);
+  }
 
   if (isDev) {
     allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');

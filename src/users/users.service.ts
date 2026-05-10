@@ -61,7 +61,7 @@ export class UsersService {
     const { username, password, gender, phone, specialties, ...rest } = createUserDto;
 
     // Générer l'email automatiquement
-    const email = `${username}@monetoile.org`;
+    const email = `${username}@diambra.net`;
 
     // Vérifier si le username ou l'email existe déjà
     const existingUser = await this.userModel.findOne({ $or: [{ email }, { username }] }).exec();
@@ -318,7 +318,7 @@ export class UsersService {
     // Configuration des dossiers d'upload
     const uploadBaseDir = process.env.UPLOAD_DIR || '/var/www/uploads';
     const uploadDir = path.join(uploadBaseDir, 'mediums');
-    const publicBaseUrl = process.env.PUBLIC_UPLOAD_URL || 'https://monetoile.org/uploads';
+    const publicBaseUrl = process.env.PUBLIC_UPLOAD_URL || 'https://diambra.net/uploads';
     const publicUrl = `${publicBaseUrl}/mediums`;
 
     // Création du dossier s'il n'existe pas

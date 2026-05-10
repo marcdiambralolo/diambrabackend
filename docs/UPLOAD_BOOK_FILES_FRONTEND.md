@@ -25,8 +25,8 @@
   - Taille max : 50 Mo
 
 ## URLs publiques après upload
-- Cover : `https://monetoile.org/uploads/books/covers/<nom-fichier>`
-- PDF : `https://monetoile.org/uploads/books/pdfs/<nom-fichier>`
+- Cover : `https://diambra.net/uploads/books/covers/<nom-fichier>`
+- PDF : `https://diambra.net/uploads/books/pdfs/<nom-fichier>`
 
 ## Réponse de l’API
 - Retourne les URLs publiques des fichiers uploadés dans la réponse JSON.
@@ -35,8 +35,8 @@
 ```json
 {
   "message": "Livre mis à jour",
-  "coverUrl": "https://monetoile.org/uploads/books/covers/123456789.jpg",
-  "pdfUrl": "https://monetoile.org/uploads/books/pdfs/123456789.pdf"
+  "coverUrl": "https://diambra.net/uploads/books/covers/123456789.jpg",
+  "pdfUrl": "https://diambra.net/uploads/books/pdfs/123456789.pdf"
 }
 ```
 

@@ -33,10 +33,10 @@ sudo systemctl enable mongod
 
 ### 4. Nginx (si utilisé comme reverse proxy)
 ```bash
-# Configuration suggérée pour /etc/nginx/sites-available/monetoile.org
+# Configuration suggérée pour /etc/nginx/sites-available/diambra.net
 server {
     listen 80;
-    server_name monetoile.org;
+    server_name diambra.net;
 
     location /api {
         proxy_pass http://localhost:3001;
@@ -57,7 +57,7 @@ server {
 ### Étape 1 : Cloner le repository
 ```bash
 # Se connecter au VPS en SSH
-ssh user@monetoile.org
+ssh user@diambra.net
 
 # Créer le dossier de l'application
 mkdir -p /var/www/mon-etoile-backend
@@ -204,7 +204,7 @@ pm2 resurrect
 curl http://localhost:3001/api/v1/config/stats
 
 # Depuis l'extérieur
-curl https://monetoile.org/api/v1/config/stats
+curl https://diambra.net/api/v1/config/stats
 ```
 
 ### Vérifier MongoDB
@@ -246,7 +246,7 @@ sudo ufw enable
 sudo apt install certbot python3-certbot-nginx
 
 # Obtenir un certificat
-sudo certbot --nginx -d monetoile.org -d www.monetoile.org
+sudo certbot --nginx -d diambra.net -d www.diambra.net
 
 # Le renouvellement automatique est configuré
 sudo certbot renew --dry-run

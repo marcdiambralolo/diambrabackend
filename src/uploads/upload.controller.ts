@@ -15,7 +15,7 @@ import { extname } from 'path';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
 const uploadDir = process.env.UPLOAD_DIR || '/var/www/uploads/books';
-const publicUrl = process.env.PUBLIC_UPLOAD_URL || 'https://monetoile.org/uploads';
+const publicUrl = process.env.PUBLIC_UPLOAD_URL || 'https://diambra.net/uploads';
 const pdfsDir = `${uploadDir}/pdfs`;
 const starDir = 'public/uploads/star';
 const starPublicUrl = `${publicUrl}/star`;

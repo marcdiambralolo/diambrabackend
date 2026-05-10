@@ -36,7 +36,7 @@ import { OfferingsService } from 'offerings/offerings.service';
 
 // Configuration du stockage Multer - refactor covers/pdfs
 const uploadDir = process.env.UPLOAD_DIR || '/var/www/uploads/books';
-const publicUrl = process.env.PUBLIC_UPLOAD_URL || 'https://monetoile.org/uploads';
+const publicUrl = process.env.PUBLIC_UPLOAD_URL || 'https://diambra.net/uploads';
 
 const coversDir = `${uploadDir}/covers`;
 const pdfsDir = `${uploadDir}/pdfs`;
