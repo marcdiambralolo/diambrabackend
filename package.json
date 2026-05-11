@@ -1,8 +1,8 @@
 {
   "name": "mon-etoile-backend",
   "version": "1.0.0",
-  "description": "Backend API NestJS pour Mon Étoile - Plateforme de voyance et spiritualité africaine",
-  "author": "Mon Étoile Team",
+  "description": "Backend API NestJS pour Diambra - Plateforme de voyance et spiritualité africaine",
+  "author": "Diambra Team",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

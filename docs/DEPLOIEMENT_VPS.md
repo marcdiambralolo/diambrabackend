@@ -1,6 +1,6 @@
-# Guide de Déploiement VPS - Mon Étoile Backend
+# Guide de Déploiement VPS - Diambra Backend
 
-Guide complet pour déployer le backend Mon Étoile sur un VPS LWS avec MongoDB local et PM2.
+Guide complet pour déployer le backend Diambra sur un VPS LWS avec MongoDB local et PM2.
 
 ## 📋 Prérequis sur le VPS
 

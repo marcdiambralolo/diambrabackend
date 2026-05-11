@@ -1,6 +1,6 @@
-# 🌟 Mon Étoile - Backend API
+# 🌟 Diambra - Backend API
 
-Backend NestJS complet pour la plateforme de voyance et spiritualité africaine **Mon Étoile**.
+Backend NestJS complet pour la plateforme de voyance et spiritualité africaine **Diambra**.
 
 ## 📋 Table des Matières
 
@@ -573,7 +573,7 @@ Ce projet est sous licence privée. Tous droits réservés.
 
 ## 👥 Équipe
 
-**Mon Étoile Team** - Plateforme de voyance et spiritualité africaine
+**Diambra Team** - Plateforme de voyance et spiritualité africaine
 
 ---
 

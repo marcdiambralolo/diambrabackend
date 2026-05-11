@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Script de déploiement pour Mon Étoile Backend sur VPS LWS
+# Script de déploiement pour Diambra Backend sur VPS LWS
 # Usage: ./deploy-vps.sh
 
 set -e
 
 echo "=================================="
-echo "Déploiement Mon Étoile Backend VPS"
+echo "Déploiement Diambra Backend VPS"
 echo "=================================="
 
 # Couleurs

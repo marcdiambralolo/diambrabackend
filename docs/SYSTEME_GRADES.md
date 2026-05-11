@@ -1,4 +1,4 @@
-# Système de gestion des grades — MON ÉTOILE
+# Système de gestion des grades — Diambra
 
 ## Les 9 grades initiatiques
 

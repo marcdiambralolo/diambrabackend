@@ -1,5 +1,5 @@
 /**
- * Permissions granulaires pour le système Mon Étoile
+ * Permissions granulaires pour le système Diambra
  * Format: ACTION:SCOPE:RESOURCE
  * - ACTION: create, read, update, delete
  * - SCOPE: own (ses propres ressources), any (toutes les ressources)

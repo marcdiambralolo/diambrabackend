@@ -233,5 +233,5 @@ Pour ajouter une nouvelle consultation :
 ---
 
 **Dernière mise à jour** : 16 janvier 2026  
-**Maintenu par** : Équipe Mon Étoile  
+**Maintenu par** : Équipe Diambra  
 **Version du système** : 1.0.0

@@ -2,7 +2,7 @@
 
 ## 📋 Vue d'ensemble
 
-Ce système organise et gère tous les prompts utilisés dans l'application Mon Étoile. Il permet de :
+Ce système organise et gère tous les prompts utilisés dans l'application Diambra. Il permet de :
 - ✅ **Mapper** chaque choix de consultation à son prompt correspondant
 - ✅ **Récupérer** facilement un prompt par son ID
 - ✅ **Remplir** automatiquement les placeholders avec les données utilisateur

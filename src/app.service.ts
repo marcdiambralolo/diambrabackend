@@ -5,14 +5,14 @@ export class AppService {
   getHealth() {
     return {
       status: 'ok',
-      message: 'Mon Étoile Backend API is running',
+      message: 'Diambra Backend API is running',
       timestamp: new Date().toISOString(),
     };
   }
 
   getStatus() {
     return {
-      api: 'Mon Étoile Backend',
+      api: 'Diambra Backend',
       version: '1.0.0',
       status: 'healthy',
       uptime: process.uptime(),

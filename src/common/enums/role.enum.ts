@@ -1,5 +1,5 @@
 /**
- * Rôles disponibles dans le système Mon Étoile
+ * Rôles disponibles dans le système Diambra
  * Hiérarchie: SUPER_ADMIN > ADMIN > CONSULTANT > USER > GUEST
  */
 export enum Role {

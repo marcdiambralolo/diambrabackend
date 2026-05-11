@@ -40,7 +40,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${GREEN}🚀 DÉPLOIEMENT DU BACKEND MON ÉTOILE${NC}"
+echo -e "${GREEN}🚀 DÉPLOIEMENT DU BACKEND Diambra${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
