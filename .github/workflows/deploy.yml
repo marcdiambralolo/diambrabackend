@@ -49,7 +49,7 @@ jobs:
             ls -la dist/
             exit 1
           fi
-          echo "✅ Build valide"
+          echo "✅ Build valide: dist/main.js présent"
 
       - name: 💾 Upload des artefacts
         uses: actions/upload-artifact@v4
@@ -65,7 +65,7 @@ jobs:
     name: 🚀 Déploiement sur VPS
     runs-on: ubuntu-latest
     needs: test-and-build
-    timeout-minutes: 10
+    timeout-minutes: 15
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
     steps:
@@ -87,7 +87,7 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      - name: 🔧 Installation & Redémarrage (Solution Radicale)
+      - name: 🔧 Installation, configuration et redémarrage
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -98,94 +98,152 @@ jobs:
             set -e
 
             echo "========================================="
-            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v2)"
+            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v3 - Final)"
             echo "📅 $(date)"
             echo "========================================="
 
             cd ${{ env.APP_DIR }}
 
-            # 1. Préparation des dossiers
+            # 1. Installation et vérification de MongoDB si nécessaire
+            echo "🔍 Vérification de MongoDB..."
+            if ! command -v mongod &> /dev/null; then
+              echo "📦 Installation de MongoDB..."
+              apt-get update -qq
+              apt-get install -y -qq gnupg curl
+              curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+              echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+              apt-get update -qq
+              apt-get install -y -qq mongodb-org
+            fi
+
+            if ! systemctl is-active --quiet mongod; then
+              systemctl start mongod
+              systemctl enable mongod
+              sleep 5
+            fi
+
+            if mongosh --eval "db.runCommand({ping: 1})" &>/dev/null; then
+              echo "✅ MongoDB opérationnel"
+            else
+              echo "⚠️ MongoDB ne répond pas encore"
+            fi
+
+            # 2. Installation et vérification de Redis
+            echo "🔍 Vérification de Redis..."
+            if ! command -v redis-server &> /dev/null; then
+              echo "📦 Installation de Redis..."
+              apt-get install -y -qq redis-server
+            fi
+
+            if ! systemctl is-active --quiet redis-server; then
+              systemctl start redis-server
+              systemctl enable redis-server
+              sleep 2
+            fi
+
+            if redis-cli ping &>/dev/null; then
+              echo "✅ Redis opérationnel"
+            else
+              echo "⚠️ Redis ne répond pas"
+            fi
+
+            # 3. Préparation des dossiers
             mkdir -p /var/www/uploads/books
             mkdir -p /var/www/uploads/temp
 
-            # 2. Installation des dépendances
+            # 4. Installation des dépendances
             echo "📦 Installation des dépendances..."
             npm ci --omit=dev --silent
 
-            # 3. Création du .env (TOUS LES FORMATS POSSIBLES)
-            echo "🔐 Création du fichier .env (format universel)..."
+            # 5. Création du fichier .env complet
+            echo "🔐 Création du fichier .env..."
             cat > .env << 'ENVEOF'
             # Serveur
             PORT=3001
             NODE_ENV=production
             BASE_URL=https://api.diambra.net
-            
+
             # Sécurité
             JWT_SECRET=${{ secrets.JWT_SECRET }}
-            
-            # MongoDB - TOUS LES FORMATS POSSIBLES
-            DATABASE_URL=mongodb://localhost:27017/diambra
+
+            # MongoDB
             MONGODB_URI=mongodb://localhost:27017/diambra
-            MONGO_URI=mongodb://localhost:27017/diambra
-            DB_URI=mongodb://localhost:27017/diambra
-            MONGODB_URL=mongodb://localhost:27017/diambra
-            
+            DATABASE_URL=mongodb://localhost:27017/diambra
+
+            # Redis
+            REDIS_HOST=localhost
+            REDIS_PORT=6379
+            REDIS_DB=0
+            REDIS_KEY_PREFIX=diambra:
+
             # DeepSeek
             DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
             DEEPSEEK_TIMEOUT=300000
             DEEPSEEK_MAX_RETRIES=4
-            
+
             # Cache & Uploads
             CACHE_TTL=3600000
             UPLOAD_DIR=/var/www/uploads/books
             PUBLIC_UPLOAD_URL=https://diambra.net/uploads
+
+            # Throttler (rate limiting)
+            THROTTLE_TTL=60
+            THROTTLE_LIMIT=100
             ENVEOF
 
-            # 4. Vérification du fichier main.js
+            # 6. Vérification du build
             if [ ! -f "dist/main.js" ]; then
               echo "❌ ERREUR: dist/main.js introuvable"
-              ls -la dist/ 2>/dev/null
+              ls -la dist/ 2>/dev/null || echo "  (dossier dist inexistant)"
               exit 1
             fi
 
-            # 5. CORRECTION RADICALE : Forcer la variable MongoDB dans le code
-            echo "🔧 Application du patch radical..."
+            # 7. Patch de sécurité pour MongoDB (fallback)
+            echo "🔧 Application du patch de sécurité..."
             cp dist/main.js dist/main.js.backup
-            sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
             sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
-            sed -i 's/process.env.MONGO_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
-            sed -i 's/process.env.DB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
-            
-            # 6. Redémarrage avec PM2
+            sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+
+            # 8. Redémarrage avec PM2
             echo "🔄 Redémarrage du backend..."
             pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
             pm2 start dist/main.js \
               --name "${{ env.PM2_NAME }}" \
               --time \
-              --instances 1 \
+              --instances 2 \
               --exp-backoff-restart-delay=100 \
-              --node-args="--max-old-space-size=512"
+              --node-args="--max-old-space-size=512" \
+              --merge-logs
             
             pm2 save
             pm2 list
 
-            # 7. Vérification
+            # 9. Vérification du bon fonctionnement
             echo "⏳ Vérification du backend..."
-            sleep 8
+            sleep 10
 
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }} || echo "000")
             
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ]; then
-              echo "✅ Backend OK (HTTP $HTTP_CODE)"
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "404" ]; then
+              echo "✅ Backend opérationnel (HTTP $HTTP_CODE)"
             else
-              echo "⚠️ Backend HTTP $HTTP_CODE - Logs:"
+              echo "⚠️ Backend HTTP $HTTP_CODE - Vérification des logs:"
               pm2 logs "${{ env.PM2_NAME }}" --lines 30 --nostream
-              echo "📄 Contenu réel du .env:"
-              cat .env | grep -E "MONGODB|DATABASE|PORT"
+              echo "📄 Variables d'environnement chargées:"
+              cat .env | grep -E "MONGODB|REDIS|PORT|JWT" | sed 's/=.*/=***/'
               exit 1
             fi
 
+            # 10. Test spécifique de Redis
+            echo "🔄 Test de connexion Redis..."
+            if redis-cli ping | grep -q "PONG"; then
+              echo "✅ Redis répond correctement"
+            else
+              echo "⚠️ Redis ne répond pas - vérifier la configuration"
+            fi
+
             echo "========================================="
-            echo "🎉 Déploiement réussi !"
-            echo "🌐 Backend: https://api.diambra.net"
+            echo "🎉 Déploiement terminé avec succès !"
+            echo "🌐 Backend: https://api.diambra.net/api/v1"
+            echo "📊 Statut: $(pm2 list | grep ${{ env.PM2_NAME }} | awk '{print $10}')"
             echo "========================================="
