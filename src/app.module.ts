@@ -1,9 +1,12 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
+import { AnalysisStatusSubscriber } from './analysis-status.subscriber';
+import { AnalysisGateway } from './analysis.gateway';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -11,24 +14,21 @@ import { CategoriesModule } from './categories/categories.module';
 import { SiteMetricsModule } from './common/site-metrics.module';
 import { ConfigModule as CustomConfigModule } from './config/config.module';
 import { ConsultationsModule } from './consultations/consultations.module';
+import { DoorsJobController } from './doors-job/doors-job.controller';
+import { DoorsJobModule } from './doors-job/doors-job.module';
+import { MessagingModule } from './messaging/messaging.module';
 import { MoneyfusionModule } from './moneyfusion/moneyfusion.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OfferingStockModule } from './offerings/offering-stock.module';
 import { OfferingsModule } from './offerings/offerings.module';
 import { PaymentsModule } from './payments/payments.module';
+import { RedisModule } from './redis/redis.module';
 import { RubriqueModule } from './rubriques/rubrique.module';
 import { ServicesModule } from './services/services.module';
 import { UploadModule } from './uploads/upload.module';
+import { UserGradeProgressModule } from './users/user-grade-progress.module';
 import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
-import { UserGradeProgressModule } from './users/user-grade-progress.module';
-import { MessagingModule } from './messaging/messaging.module';
-import { AnalysisGateway } from './analysis.gateway';
-import { AnalysisStatusSubscriber } from './analysis-status.subscriber';
-import { RedisModule } from './redis/redis.module';
-import { DoorsJobModule } from './doors-job/doors-job.module';
-import { DoorsJobController } from './doors-job/doors-job.controller';
-import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
