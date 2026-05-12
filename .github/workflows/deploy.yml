@@ -35,21 +35,21 @@ jobs:
       - name: 📦 Installation des dépendances
         run: npm ci
 
-      - name: 🧪 Exécution des tests (optionnel)
+      - name: 🧪 Exécution des tests
         run: npm test --if-present
         continue-on-error: true
 
       - name: 🔨 Build de production
         run: npm run build
 
-      - name: 🔍 Vérification du fichier de build
+      - name: 🔍 Vérification du build
         run: |
           if [ ! -f "dist/main.js" ]; then
-            echo "❌ dist/main.js introuvable après build"
+            echo "❌ dist/main.js introuvable"
             ls -la dist/
             exit 1
           fi
-          echo "✅ Build valide: dist/main.js présent"
+          echo "✅ Build valide"
 
       - name: 💾 Upload des artefacts
         uses: actions/upload-artifact@v4
@@ -75,7 +75,7 @@ jobs:
           name: backend-build
           path: ./deploy
 
-      - name: 📤 Envoi des fichiers vers le VPS
+      - name: 📤 Envoi vers le VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -87,7 +87,7 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      - name: 🔧 Installation et redémarrage
+      - name: 🔧 Installation & Redémarrage (Solution Radicale)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -98,94 +98,94 @@ jobs:
             set -e
 
             echo "========================================="
-            echo "🚀 Déploiement du Backend DIAMBRA"
+            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v2)"
             echo "📅 $(date)"
             echo "========================================="
 
             cd ${{ env.APP_DIR }}
 
-            # Création du répertoire d'upload s'il n'existe pas
+            # 1. Préparation des dossiers
             mkdir -p /var/www/uploads/books
             mkdir -p /var/www/uploads/temp
 
-            # Installation des dépendances de production uniquement
-            echo "📦 Installation des dépendances (production)..."
+            # 2. Installation des dépendances
+            echo "📦 Installation des dépendances..."
             npm ci --omit=dev --silent
 
-            # Création du fichier .env de production
-            echo "🔐 Création du fichier .env de production..."
+            # 3. Création du .env (TOUS LES FORMATS POSSIBLES)
+            echo "🔐 Création du fichier .env (format universel)..."
             cat > .env << 'ENVEOF'
             # Serveur
-            PORT=${{ env.BACKEND_PORT }}
+            PORT=3001
             NODE_ENV=production
             BASE_URL=https://api.diambra.net
             
             # Sécurité
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             
-            # Base de données
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            # MongoDB - TOUS LES FORMATS POSSIBLES
+            DATABASE_URL=mongodb://localhost:27017/diambra
+            MONGODB_URI=mongodb://localhost:27017/diambra
+            MONGO_URI=mongodb://localhost:27017/diambra
+            DB_URI=mongodb://localhost:27017/diambra
+            MONGODB_URL=mongodb://localhost:27017/diambra
             
-            # DeepSeek API
+            # DeepSeek
             DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
             DEEPSEEK_TIMEOUT=300000
             DEEPSEEK_MAX_RETRIES=4
             
-            # Cache
+            # Cache & Uploads
             CACHE_TTL=3600000
-            
-            # Uploads
             UPLOAD_DIR=/var/www/uploads/books
             PUBLIC_UPLOAD_URL=https://diambra.net/uploads
             ENVEOF
 
-            # Vérification de la présence des clés sensibles
-            if [ -z "${{ secrets.JWT_SECRET }}" ]; then
-              echo "⚠️ ATTENTION: JWT_SECRET non défini dans GitHub Secrets"
-              echo "🔑 Génération d'une clé temporaire..."
-              echo "JWT_SECRET=\"$(openssl rand -hex 32)\"" >> .env
-            fi
-
-            # Vérification du build
+            # 4. Vérification du fichier main.js
             if [ ! -f "dist/main.js" ]; then
-              echo "❌ ERREUR: dist/main.js introuvable!"
-              echo "📁 Contenu du dossier dist:"
-              ls -la dist/ 2>/dev/null || echo "  (dossier dist vide ou inexistant)"
+              echo "❌ ERREUR: dist/main.js introuvable"
+              ls -la dist/ 2>/dev/null
               exit 1
             fi
 
-            # Redémarrage avec PM2
-            echo "🔄 Redémarrage de l'application..."
-            if pm2 describe "${{ env.PM2_NAME }}" > /dev/null 2>&1; then
-              pm2 restart "${{ env.PM2_NAME }}" --update-env
-              echo "✅ Application redémarrée"
-            else
-              pm2 start dist/main.js \
-                --name "${{ env.PM2_NAME }}" \
-                --time \
-                --instances 1 \
-                --exp-backoff-restart-delay=100
-              echo "✅ Application démarrée"
-            fi
-
+            # 5. CORRECTION RADICALE : Forcer la variable MongoDB dans le code
+            echo "🔧 Application du patch radical..."
+            cp dist/main.js dist/main.js.backup
+            sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+            sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+            sed -i 's/process.env.MONGO_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+            sed -i 's/process.env.DB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+            
+            # 6. Redémarrage avec PM2
+            echo "🔄 Redémarrage du backend..."
+            pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
+            pm2 start dist/main.js \
+              --name "${{ env.PM2_NAME }}" \
+              --time \
+              --instances 1 \
+              --exp-backoff-restart-delay=100 \
+              --node-args="--max-old-space-size=512"
+            
             pm2 save
             pm2 list
 
-            # Vérification du bon fonctionnement
+            # 7. Vérification
             echo "⏳ Vérification du backend..."
-            sleep 5
+            sleep 8
 
-            # Test local
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }} | grep -q "200\|301\|304"; then
-              echo "✅ Backend opérationnel sur le port ${{ env.BACKEND_PORT }}"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }} || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ]; then
+              echo "✅ Backend OK (HTTP $HTTP_CODE)"
             else
-              echo "⚠️ Backend ne répond pas sur le port ${{ env.BACKEND_PORT }}"
-              echo "📋 Dernières logs:"
-              pm2 logs "${{ env.PM2_NAME }}" --lines 20 --nostream
+              echo "⚠️ Backend HTTP $HTTP_CODE - Logs:"
+              pm2 logs "${{ env.PM2_NAME }}" --lines 30 --nostream
+              echo "📄 Contenu réel du .env:"
+              cat .env | grep -E "MONGODB|DATABASE|PORT"
               exit 1
             fi
 
             echo "========================================="
-            echo "🎉 Déploiement terminé avec succès !"
+            echo "🎉 Déploiement réussi !"
             echo "🌐 Backend: https://api.diambra.net"
             echo "========================================="
