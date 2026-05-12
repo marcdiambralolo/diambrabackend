@@ -7,14 +7,12 @@ import { GeolocationService } from '../common/services/geolocation.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
 import { OfferingsModule } from '../offerings/offerings.module';
-import { GradeConfig, GradeConfigSchema } from '../grades/schemas/grade-config.schema';
-import { RubriqueModule } from '../rubriques/rubrique.module';
+ import { RubriqueModule } from '../rubriques/rubrique.module';
 import { Rubrique, RubriqueSchema } from '../rubriques/rubrique.schema';
 import { RubriqueService } from '../rubriques/rubrique.service';
 import { GradeService } from '../users/grade.service';
 import { UserGradeProgressModule } from '../users/user-grade-progress.module';
-import { GradesModule } from '../grades/grades.module';
-import { User, UserSchema } from '../users/schemas/user.schema';
+ import { User, UserSchema } from '../users/schemas/user.schema';
 import { AnalysisDbService } from './analysis-db.service';
 import { AnalysisQueueService } from './analysis-queue.service';
 import { AnalysisPromptService } from './analysisprompt.service';
@@ -54,13 +52,11 @@ import { PractitionerReviewsModule } from '../reviews/practitioner-reviews.modul
       { name: User.name, schema: UserSchema },
       { name: Rubrique.name, schema: RubriqueSchema },
       { name: Analysis.name, schema: AnalysisSchema },
-      { name: GradeConfig.name, schema: GradeConfigSchema },
-    ]),
+     ]),
     NotificationsModule,
     RubriqueModule,
     UserGradeProgressModule,
-    GradesModule,
-    PractitionerReviewsModule,
+     PractitionerReviewsModule,
   ],
   controllers: [ConsultationsController, ConsultationMessagesController, DeepseekController, UserConsultationChoiceController, ConsultationChoiceStatusController, ConsultationChoiceController, Slide4SectionDoorsController, AnalysisController, AnalysisRawController],
   providers: [AnalysisQueueService, ConsultationMessagesService, ConsultationsService, DeepseekService,

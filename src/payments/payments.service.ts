@@ -11,8 +11,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
-import { BooksService } from '../books/books.service';
-import { ConsultationStatus } from '../common/enums/consultation-status.enum';
+ import { ConsultationStatus } from '../common/enums/consultation-status.enum';
 import { PaymentMethod, PaymentStatus } from '../common/enums/payment-status.enum';
 import { AnalysisQueueService } from '../consultations/analysis-queue.service';
 import { ConsultationsService } from '../consultations/consultations.service';
@@ -62,7 +61,6 @@ export class PaymentsService {
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly httpService: HttpService,
-    private readonly booksService: BooksService,
     private readonly analysisQueueService: AnalysisQueueService,
     private readonly consultationsService: ConsultationsService,
   ) {}
@@ -269,7 +267,6 @@ export class PaymentsService {
 
     const paymentData = verification.payment.metadata || body.paymentData || {};
     const personalInfo = paymentData.personal_Info?.[0] || {};
-    const userId = personalInfo.userId || null;
     const consultationId = personalInfo.consultationId || null;
 
     // Idempotence
@@ -284,40 +281,14 @@ export class PaymentsService {
     }
 
     // Créer le paiement (consultation ou livre)
-    const payment = await this.paymentModel.create({
-      userId: userId || undefined,
-      consultationId: consultationId || undefined,
-      amount: paymentData.montant || paymentData.Montant || 0,
-      currency: 'XAF',
-      method: PaymentMethod.MONEYFUSION,
-      status: PaymentStatus.COMPLETED,
-      moneyFusionToken: token,
-      transactionId: paymentData.reference || paymentData.tokenPay || token,
-      metadata: paymentData,
-      paidAt: new Date(),
-    });
 
     if (type === 'book' && personalInfo.bookId) {
-      // Enregistrer l'achat de livre et générer le lien de téléchargement
-      const bookPurchase = await this.booksService.recordPurchase(
-        {
-          bookId: personalInfo.bookId,
-        _id:  personalInfo.bookId as any, // Passer l'ID du livre pour la validation dans recordPurchase
-          paymentId: payment._id.toString(),
-          customerName: paymentData.nomclient || 'Client',
-          customerPhone: paymentData.numeroSend,
-          customerEmail: paymentData.email || undefined,
-          price: paymentData.montant || paymentData.Montant || 0,
-        },
-        userId || undefined,
-      );
-
+     
       return {
         success: true,
         status: 'paid',
         bookId: personalInfo.bookId,
-        downloadUrl: `/api/v1/books/${personalInfo.bookId}/download?token=${bookPurchase.downloadToken}`,
-        message: 'Paiement du livre traité avec succès',
+         message: 'Paiement du livre traité avec succès',
       };
     }
 
@@ -518,24 +489,13 @@ export class PaymentsService {
         paymentData.personal_Info.length > 0 &&
         paymentData.personal_Info[0].productType === 'ebook_pdf';
 
-      let bookPurchase = null;
+ 
 
       if (isBookPurchase) {
         // Enregistrer l'achat du livre
         const bookInfo = paymentData.personal_Info[0];
         try {
-          bookPurchase = await this.booksService.recordPurchase(
-            {
-              bookId: bookInfo.bookId,
-              _id: bookInfo.bookId as any, // Passer l'ID du livre pour la validation dans recordPurchase
-              paymentId: payment[0]._id.toString(),
-              customerName: paymentData.nomclient || 'Client',
-              customerPhone: paymentData.numeroSend,
-              customerEmail: paymentData.email || undefined,
-              price: paymentData.montant,
-            },
-            userId,
-          );
+         
           this.logger.log(`Achat de livre enregistré: ${bookInfo.bookId}`);
         } catch (bookError) {
           this.logger.error('Erreur enregistrement achat livre:', bookError);
@@ -563,7 +523,7 @@ export class PaymentsService {
           : 'Paiement enregistré avec succès',
         payment: payment[0],
         credits: updatedUser ? updatedUser.credits : undefined,
-        bookPurchase: bookPurchase || undefined,
+ 
       };
     } catch (error) {
       await session.abortTransaction();
@@ -1028,10 +988,7 @@ export class PaymentsService {
 
       this.logger.log(`📚 Traitement achat livre: ${bookId} pour utilisateur: ${userId}`);
 
-      // Marquer le livre comme acheté par cet utilisateur
-      if (userId) {
-        await this.booksService.addUserPurchase(bookId, userId);
-      }
+      
 
       // Générer le token de téléchargement sécurisé
       const downloadToken = Buffer.from(`${bookId}:${token}`).toString('base64');

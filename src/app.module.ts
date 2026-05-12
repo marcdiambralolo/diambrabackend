@@ -7,13 +7,10 @@ import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { BlogModule } from './blog/blog.module';
-import { BooksModule } from './books/books.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SiteMetricsModule } from './common/site-metrics.module';
 import { ConfigModule as CustomConfigModule } from './config/config.module';
 import { ConsultationsModule } from './consultations/consultations.module';
-import { GradesModule } from './grades/grades.module';
 import { MoneyfusionModule } from './moneyfusion/moneyfusion.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OfferingStockModule } from './offerings/offering-stock.module';
@@ -85,14 +82,11 @@ import { BullModule } from '@nestjs/bullmq';
     MoneyfusionModule,
     SiteMetricsModule,
     AdminModule,
-    BooksModule,
-    BlogModule,
     WalletModule,
     OfferingsModule,
     OfferingStockModule,
     RubriqueModule,
     CategoriesModule,
-    GradesModule,
     CustomConfigModule,
     UploadModule,
     UserGradeProgressModule,

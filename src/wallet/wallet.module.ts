@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { forwardRef } from '@nestjs/common';
+import { Consultation } from '../consultations/schemas/consultation.schema';
+import { ConsultationSchema } from '../consultations/schemas/consultation.schema';
+import { ConsultationsModule } from '../consultations/consultations.module';
+import { OfferingStockModule } from '../offerings/offering-stock.module';
+import { OfferingsModule } from '../offerings/offerings.module';
+import { WalletTransaction, WalletTransactionSchema } from './schemas/wallet-transaction.schema';
+import { WalletOfferingsService } from './wallet-offerings.service';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
-import { WalletOfferingsService } from './wallet-offerings.service';
-import { WalletTransaction, WalletTransactionSchema } from './schemas/wallet-transaction.schema';
-import { OfferingsModule } from '../offerings/offerings.module';
-import { OfferingStockModule } from '../offerings/offering-stock.module';
-import { Consultation, ConsultationSchema } from '../consultations/schemas/consultation.schema';
 
 @Module({
   imports: [
@@ -15,7 +18,8 @@ import { Consultation, ConsultationSchema } from '../consultations/schemas/consu
       { name: Consultation.name, schema: ConsultationSchema },
     ]),
     OfferingsModule,
-    OfferingStockModule
+    forwardRef(() => OfferingStockModule),
+    forwardRef(() => ConsultationsModule),
   ],
   controllers: [WalletController],
   providers: [WalletService, WalletOfferingsService],

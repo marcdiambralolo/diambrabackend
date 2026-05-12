@@ -1,29 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types, Document } from 'mongoose';
-import { User, UserDocument } from '../users/schemas/user.schema';
-import { Consultation, ConsultationDocument } from '../consultations/schemas/consultation.schema';
-import { GradeConfig } from '../grades/schemas/grade-config.schema';
-import { UserGradeProgressService } from './user-grade-progress.service';
+import { Model, Types } from 'mongoose';
 import {
-  UserGrade,
-  GRADE_ORDER,
   GRADE_MESSAGES,
+  GRADE_ORDER,
   PROFILE_WELCOME_MESSAGE,
+  UserGrade,
 } from '../common/enums/user-grade.enum';
+import { Consultation, ConsultationDocument } from '../consultations/schemas/consultation.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class GradeService {
-  private readonly logger = new Logger(GradeService.name);
 
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
     @InjectModel(Consultation.name)
     private consultationModel: Model<ConsultationDocument>,
-    @InjectModel(GradeConfig.name)
-    private gradeConfigModel: Model<GradeConfig & Document>,
-    private readonly userGradeProgressService: UserGradeProgressService,
   ) { }
 
   /**
@@ -121,22 +115,10 @@ export class GradeService {
    * Calcule le grade approprié en fonction des activités (depuis la BD)
    */
   async calculateGradeFromDb(
-    consultations: number,
-    rituels: number,
-    livres: number,
+ 
   ): Promise<UserGrade | null> {
     // Récupérer tous les grades depuis la BD, triés du plus haut au plus bas
-    const gradeConfigs = await this.gradeConfigModel.find().sort({ level: -1 }).lean().exec();
-    for (const config of gradeConfigs) {
-      const requirements = config.requirements;
-      if (
-        consultations >= requirements.consultations &&
-        rituels >= requirements.rituels &&
-        livres >= requirements.livres
-      ) {
-        return config.grade as UserGrade;
-      }
-    }
+
     return null; // Aucun grade atteint
   }
 
@@ -216,14 +198,9 @@ export class GradeService {
 
     const currentGrade = user.grade ?? null;
     const nextGrade = this.getNextGrade(currentGrade);
-    let userGradeProgress: any = null;
-    const gradeConfigs = await this.gradeConfigModel.find().sort({ level: 1 }).lean().exec();
-
-    let currentIndex = user.grade ? gradeConfigs.findIndex((g: any) => g.grade === user.grade) : 0;
-    if (currentIndex < 0) currentIndex = 0;
-    const gradeId = gradeConfigs[currentIndex]._id;
-    userGradeProgress = await this.userGradeProgressService['userGradeProgressModel']
-      .findOne({ userId, gradeId }).exec();
+    
+     
+   
 
 
 
@@ -238,39 +215,10 @@ export class GradeService {
       rituelsCompleted: user.rituelsCompleted || 0,
       booksRead: user.booksRead || 0,
       nextGradeRequirements: null,
-      progress: null,
-      userGradeProgress,
+      progress: null, 
     };
 
-    if (nextGrade) {
-      // Récupérer les requirements du grade suivant depuis la BD
-      const nextGradeConfig = gradeConfigs.find((g: any) => g.grade === nextGrade);
-      if (nextGradeConfig && nextGradeConfig.requirements) {
-        const requirements = nextGradeConfig.requirements;
-        stats.nextGradeRequirements = {
-          consultationsParRubrique: requirements.consultations,
-          rituels: requirements.rituels,
-          livres: requirements.livres,
-        };
-        stats.progress = {
-          consultationsParRubrique: Math.min(
-            100,
-            Math.round(
-              ((user.consultationsCompleted || 0) / requirements.consultations) * 100,
-            ),
-          ),
-          rituels: Math.min(
-            100,
-            Math.round(((user.rituelsCompleted || 0) / requirements.rituels) * 100),
-          ),
-          livres: Math.min(
-            100,
-            Math.round(((user.booksRead || 0) / requirements.livres) * 100),
-          ),
-        };
-      }
-    }
-
+    
     return stats;
   }
 
@@ -302,11 +250,6 @@ export class GradeService {
       livres: number;
     };
   }>> {
-    const gradeConfigs = await this.gradeConfigModel.find().sort({ level: 1 }).lean().exec();
-    return gradeConfigs.map((config: any) => ({
-      grade: config.grade as UserGrade,
-      level: config.level,
-      requirements: config.requirements,
-    }));
+    return [];
   }
 }

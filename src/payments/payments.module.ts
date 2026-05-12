@@ -7,8 +7,7 @@ import { PaymentsController } from './payments.controller';
 import { Payment, PaymentSchema } from './schemas/payment.schema';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { UsersModule } from '../users/users.module';
-import { BooksModule } from '../books/books.module';
-import { ConsultationsModule } from '../consultations/consultations.module';
+ import { ConsultationsModule } from '../consultations/consultations.module';
 
 @Module({
   imports: [
@@ -17,7 +16,6 @@ import { ConsultationsModule } from '../consultations/consultations.module';
       { name: User.name, schema: UserSchema },
     ]),
     UsersModule,
-    BooksModule,
     ConsultationsModule,
     HttpModule,
   ],

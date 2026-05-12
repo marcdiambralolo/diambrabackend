@@ -1,0 +1,191 @@
+# .github/workflows/deploy-backend.yml
+name: 🚀 Déployer le Backend DIAMBRA
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  APP_DIR: "/var/www/diambrabackend"
+  PM2_NAME: "diambra-backend"
+  BACKEND_PORT: 3001
+
+jobs:
+  test-and-build:
+    name: 📦 Test & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout du code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: 📦 Installation des dépendances
+        run: npm ci
+
+      - name: 🧪 Exécution des tests (optionnel)
+        run: npm test --if-present
+        continue-on-error: true
+
+      - name: 🔨 Build de production
+        run: npm run build
+
+      - name: 🔍 Vérification du fichier de build
+        run: |
+          if [ ! -f "dist/main.js" ]; then
+            echo "❌ dist/main.js introuvable après build"
+            ls -la dist/
+            exit 1
+          fi
+          echo "✅ Build valide: dist/main.js présent"
+
+      - name: 💾 Upload des artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: |
+            dist/
+            package.json
+            package-lock.json
+          retention-days: 1
+
+  deploy:
+    name: 🚀 Déploiement sur VPS
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    timeout-minutes: 10
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - name: 📥 Téléchargement du build
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-build
+          path: ./deploy
+
+      - name: 📤 Envoi des fichiers vers le VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "deploy/*"
+          target: "${{ env.APP_DIR }}"
+          strip_components: 1
+          overwrite: true
+
+      - name: 🔧 Installation et redémarrage
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "========================================="
+            echo "🚀 Déploiement du Backend DIAMBRA"
+            echo "📅 $(date)"
+            echo "========================================="
+
+            cd ${{ env.APP_DIR }}
+
+            # Création du répertoire d'upload s'il n'existe pas
+            mkdir -p /var/www/uploads/books
+            mkdir -p /var/www/uploads/temp
+
+            # Installation des dépendances de production uniquement
+            echo "📦 Installation des dépendances (production)..."
+            npm ci --omit=dev --silent
+
+            # Création du fichier .env de production
+            echo "🔐 Création du fichier .env de production..."
+            cat > .env << 'ENVEOF'
+            # Serveur
+            PORT=${{ env.BACKEND_PORT }}
+            NODE_ENV=production
+            BASE_URL=https://api.diambra.net
+            
+            # Sécurité
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            
+            # Base de données
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            
+            # DeepSeek API
+            DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
+            DEEPSEEK_TIMEOUT=300000
+            DEEPSEEK_MAX_RETRIES=4
+            
+            # Cache
+            CACHE_TTL=3600000
+            
+            # Uploads
+            UPLOAD_DIR=/var/www/uploads/books
+            PUBLIC_UPLOAD_URL=https://diambra.net/uploads
+            ENVEOF
+
+            # Vérification de la présence des clés sensibles
+            if [ -z "${{ secrets.JWT_SECRET }}" ]; then
+              echo "⚠️ ATTENTION: JWT_SECRET non défini dans GitHub Secrets"
+              echo "🔑 Génération d'une clé temporaire..."
+              echo "JWT_SECRET=\"$(openssl rand -hex 32)\"" >> .env
+            fi
+
+            # Vérification du build
+            if [ ! -f "dist/main.js" ]; then
+              echo "❌ ERREUR: dist/main.js introuvable!"
+              echo "📁 Contenu du dossier dist:"
+              ls -la dist/ 2>/dev/null || echo "  (dossier dist vide ou inexistant)"
+              exit 1
+            fi
+
+            # Redémarrage avec PM2
+            echo "🔄 Redémarrage de l'application..."
+            if pm2 describe "${{ env.PM2_NAME }}" > /dev/null 2>&1; then
+              pm2 restart "${{ env.PM2_NAME }}" --update-env
+              echo "✅ Application redémarrée"
+            else
+              pm2 start dist/main.js \
+                --name "${{ env.PM2_NAME }}" \
+                --time \
+                --instances 1 \
+                --exp-backoff-restart-delay=100
+              echo "✅ Application démarrée"
+            fi
+
+            pm2 save
+            pm2 list
+
+            # Vérification du bon fonctionnement
+            echo "⏳ Vérification du backend..."
+            sleep 5
+
+            # Test local
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }} | grep -q "200\|301\|304"; then
+              echo "✅ Backend opérationnel sur le port ${{ env.BACKEND_PORT }}"
+            else
+              echo "⚠️ Backend ne répond pas sur le port ${{ env.BACKEND_PORT }}"
+              echo "📋 Dernières logs:"
+              pm2 logs "${{ env.PM2_NAME }}" --lines 20 --nostream
+              exit 1
+            fi
+
+            echo "========================================="
+            echo "🎉 Déploiement terminé avec succès !"
+            echo "🌐 Backend: https://api.diambra.net"
+            echo "========================================="

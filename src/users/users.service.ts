@@ -11,7 +11,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
 import { Role } from '../common/enums/role.enum';
-import { GradeConfig } from '../grades/schemas/grade-config.schema';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RegisterMediumDto } from './dto/register-medium.dto';

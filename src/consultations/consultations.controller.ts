@@ -1,5 +1,3 @@
-
-import { UserGradeProgressService } from '@/users/user-grade-progress.service';
 import { UsersService } from '@/users/users.service';
 import {
   Body,
@@ -27,10 +25,7 @@ import { Permission } from '../common/enums/permission.enum';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { GeolocationService } from '../common/services/geolocation.service';
-import { GradeConfigService } from '../grades/grade-config.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { RubriqueService } from '../rubriques/rubrique.service';
-import { GradeService } from '../users/grade.service';
 import { UserDocument } from '../users/schemas/user.schema';
 import { AnalysisQueueService } from './analysis-queue.service';
 import { AnalysisService } from './analysis.service';
@@ -54,11 +49,7 @@ export class ConsultationsController {
     private readonly rubriqueService: RubriqueService,
     private readonly deepseekService: DeepseekService,
     private readonly usersService: UsersService,
-    private readonly notificationsService: NotificationsService,
     private readonly geolocationService: GeolocationService,
-    private readonly gradeService: GradeService,
-    private readonly userGradeProgressService: UserGradeProgressService,
-    private readonly gradeConfigService: GradeConfigService,
     private readonly consultationNotificationService: ConsultationNotificationService,
   ) { }
 
@@ -243,7 +234,7 @@ export class ConsultationsController {
         {
           success: false,
           message: 'Erreur lors de la génération de la carte du ciel',
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -900,7 +891,7 @@ export class ConsultationsController {
       // Sinon, retourne une erreur 200 avec un message structuré
       return {
         success: false,
-        error: error?.message || 'Erreur inconnue',
+        error: error instanceof Error ? error.message : 'Erreur inconnue: ' + String(error),
         status: 'error',
       };
     }

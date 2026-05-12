@@ -1,9 +1,7 @@
-import { GradeConfig } from '@/grades';
 import { Rubrique, RubriqueDocument } from '@/rubriques/rubrique.schema';
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserGrade } from '../common/enums/user-grade.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import { GradeService } from '../users/grade.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -23,8 +21,7 @@ export class ConsultationNotificationService {
         private readonly userGradeProgressService: UserGradeProgressService,
         @InjectModel(Rubrique.name) private rubriqueModel: Model<RubriqueDocument>,
         @InjectModel(User.name) private userModel: Model<UserDocument>,
-        @InjectModel(GradeConfig.name) private readonly gradeConfigModel: Model<GradeConfig>,
-    ) { }
+     ) { }
 
     async notifyUser(id: string) {
         try {
@@ -34,32 +31,12 @@ export class ConsultationNotificationService {
 
             const user = await this.userModel.findById(userId).exec();
             if (!user) throw new NotFoundException('User not found');
-            const gradeConfigs = await this.gradeConfigModel.find().sort({ level: 1 }).lean().exec();
-            let currentIndex = user.grade ? gradeConfigs.findIndex((g: any) => g.grade === user.grade) : 0;
-            if (currentIndex < 0) currentIndex = 0;
-            if (!user.grade) {
-                user.grade = gradeConfigs[0].grade as UserGrade;
-                user.lastGradeUpdate = new Date();
-            }
-            const currentGradeConfig = gradeConfigs[currentIndex];
-            const rc = currentGradeConfig.requirements?.consultations ?? 0;
+           
+          
+           
 
-            let progress = null;
-            const gradeId = currentGradeConfig._id.toString();
-            progress = await this.userGradeProgressService['userGradeProgressModel']
-                .findOne({ userId, gradeId }).exec();
-
-            if (progress && !progress.completed) {
-                const currentChoices = progress.choiceIds?.length ?? 0;
-                const meets = currentChoices >= rc;
-                if (meets && currentIndex + 1 < gradeConfigs.length) {
-                    user.grade = gradeConfigs[currentIndex + 1].grade as UserGrade;
-                    user.lastGradeUpdate = new Date();
-                    progress.completed = true;
-                    await progress.save();
-                }
-                await user.save();
-            }
+           
+              await user.save();
             return {
                 success: true,
                 message: "Notification envoyée à l'utilisateur.",
