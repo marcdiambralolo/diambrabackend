@@ -42,7 +42,6 @@ async function bootstrap() {
   }));
 
   const baseUrl = process.env.BASE_URL || 'https://diambra.net';
-  const isDev = process.env.NODE_ENV !== 'production';
 
   const allowedOrigins = [
     baseUrl,
