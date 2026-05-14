@@ -4,7 +4,24 @@ name: 🚀 Déployer le Backend DIAMBRA
 on:
   push:
     branches: [main, master]
+  pull_request:
+    branches: [main, master]
+    types: [closed]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environnement cible'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      skip_tests:
+        description: 'Ignorer les tests'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: deploy-backend-${{ github.ref }}
@@ -15,12 +32,16 @@ env:
   APP_DIR: "/var/www/diambrabackend"
   PM2_NAME: "diambra-backend"
   BACKEND_PORT: 3001
+  HEALTH_CHECK_ENDPOINT: "/api/v1"
+  HEALTH_CHECK_TIMEOUT: 30
+  DEPLOY_TIMESTAMP: ${{ github.run_id }}
 
 jobs:
-  test-and-build:
-    name: 📦 Test & Build
+  lint-and-test:
+    name: 🔍 Lint & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    if: ${{ !github.event.inputs.skip_tests }}
 
     steps:
       - name: 📥 Checkout du code
@@ -35,12 +56,49 @@ jobs:
       - name: 📦 Installation des dépendances
         run: npm ci
 
-      - name: 🧪 Exécution des tests
+      - name: 🧹 ESLint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: 🧪 Tests unitaires
         run: npm test --if-present
+        continue-on-error: true
+
+      - name: 📊 Rapport de couverture
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: always()
+        with:
+          working-directory: ./
+          json-summary-path: coverage/coverage-summary.json
+
+  build-and-package:
+    name: 📦 Build & Package
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout du code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: 📦 Installation des dépendances
+        run: npm ci
+
+      - name: 🧪 Tests d'intégration
+        run: npm run test:integration --if-present
         continue-on-error: true
 
       - name: 🔨 Build de production
         run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
 
       - name: 🔍 Vérification du build
         run: |
@@ -49,31 +107,80 @@ jobs:
             ls -la dist/
             exit 1
           fi
-          echo "✅ Build valide: dist/main.js présent"
+          
+          BUILD_SIZE=$(du -sh dist/ | cut -f1)
+          echo "✅ Build valide: dist/main.js présent (taille: $BUILD_SIZE)"
+          
+          echo "📋 Vérification des dépendances critiques..."
+          DEPENDENCIES="@nestjs/mongoose @nestjs/redis @nestjs/jwt @nestjs/throttler"
+          for dep in $DEPENDENCIES; do
+            if ! grep -q "$dep" package.json; then
+              echo "⚠️ $dep non trouvé dans package.json"
+            fi
+          done
+
+      - name: 🔐 Analyse de sécurité (npm audit)
+        run: npm audit --production --audit-level=high || true
+
+      - name: 📝 Génération du fichier de version
+        run: |
+          cat > version.json << EOF
+          {
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "timestamp": "$(date -Iseconds)",
+            "version": "$(node -p "require('./package.json').version")",
+            "deploy_id": "${{ env.DEPLOY_TIMESTAMP }}",
+            "environment": "${{ github.event.inputs.environment || 'production' }}"
+          }
+          EOF
 
       - name: 💾 Upload des artefacts
         uses: actions/upload-artifact@v4
         with:
-          name: backend-build
+          name: backend-build-${{ env.DEPLOY_TIMESTAMP }}
           path: |
             dist/
             package.json
             package-lock.json
+            version.json
+          retention-days: 7
+          compression-level: 6
+
+      - name: 💾 Upload comme artefact "latest"
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build-latest
+          path: |
+            dist/
+            package.json
+            package-lock.json
+            version.json
           retention-days: 1
 
-  deploy:
+  deploy-production:
     name: 🚀 Déploiement sur VPS
     runs-on: ubuntu-latest
-    needs: test-and-build
-    timeout-minutes: 15
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    needs: build-and-package
+    timeout-minutes: 25
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
 
     steps:
       - name: 📥 Téléchargement du build
         uses: actions/download-artifact@v4
         with:
-          name: backend-build
+          name: backend-build-latest
           path: ./deploy
+
+      - name: 📄 Affichage des informations de version
+        run: |
+          if [ -f "./deploy/version.json" ]; then
+            echo "📦 Déploiement de la version:"
+            cat ./deploy/version.json
+          fi
 
       - name: 📤 Envoi vers le VPS
         uses: appleboy/scp-action@v0.1.7
@@ -83,11 +190,12 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           source: "deploy/*"
-          target: "${{ env.APP_DIR }}"
+          target: "${{ env.APP_DIR }}/new_deploy"
           strip_components: 1
           overwrite: true
+          timeout: 60s
 
-      - name: 🔧 Installation, configuration et redémarrage
+      - name: 🔧 Déploiement atomique avec validation
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -98,13 +206,41 @@ jobs:
             set -e
 
             echo "========================================="
-            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v3 - Final)"
+            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v5 - Pro)"
             echo "📅 $(date)"
+            echo "🆔 Déploiement ID: ${{ env.DEPLOY_TIMESTAMP }}"
             echo "========================================="
 
             cd ${{ env.APP_DIR }}
 
-            # 1. Installation et vérification de MongoDB si nécessaire
+            # 1. Vérification de l'espace disque
+            echo "🔍 Vérification de l'espace disque..."
+            DISK_USAGE=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
+            if [ "$DISK_USAGE" -gt 85 ]; then
+              echo "⚠️ Espace disque faible: ${DISK_USAGE}% utilisé"
+              if [ "$DISK_USAGE" -gt 95 ]; then
+                echo "❌ Espace disque critique - Déploiement annulé"
+                exit 1
+              fi
+            fi
+
+            # 2. Backup de la version actuelle
+            echo "💾 Backup de la version actuelle..."
+            if [ -d "dist" ] && [ -f "version.json" ]; then
+              CURRENT_VERSION=$(cat version.json 2>/dev/null | grep -o '"commit":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+              BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
+              mkdir -p "backups/${BACKUP_DIR}"
+              cp -r dist "backups/${BACKUP_DIR}/" 2>/dev/null || true
+              cp package.json "backups/${BACKUP_DIR}/" 2>/dev/null || true
+              cp package-lock.json "backups/${BACKUP_DIR}/" 2>/dev/null || true
+              cp .env "backups/${BACKUP_DIR}/" 2>/dev/null || true
+              cp version.json "backups/${BACKUP_DIR}/" 2>/dev/null || true
+              echo "✅ Backup créé: backups/${BACKUP_DIR}"
+              # Garder seulement les 10 derniers backups
+              ls -t backups/ | tail -n +11 | xargs -r rm -rf
+            fi
+
+            # 3. Installation et vérification de MongoDB
             echo "🔍 Vérification de MongoDB..."
             if ! command -v mongod &> /dev/null; then
               echo "📦 Installation de MongoDB..."
@@ -125,10 +261,12 @@ jobs:
             if mongosh --eval "db.runCommand({ping: 1})" &>/dev/null; then
               echo "✅ MongoDB opérationnel"
             else
-              echo "⚠️ MongoDB ne répond pas encore"
+              echo "⚠️ MongoDB ne répond pas - tentative de redémarrage..."
+              systemctl restart mongod
+              sleep 3
             fi
 
-            # 2. Installation et vérification de Redis
+            # 4. Installation et vérification de Redis
             echo "🔍 Vérification de Redis..."
             if ! command -v redis-server &> /dev/null; then
               echo "📦 Installation de Redis..."
@@ -141,27 +279,57 @@ jobs:
               sleep 2
             fi
 
-            if redis-cli ping &>/dev/null; then
+            if redis-cli ping | grep -q "PONG"; then
               echo "✅ Redis opérationnel"
             else
-              echo "⚠️ Redis ne répond pas"
+              echo "⚠️ Redis ne répond pas - tentative de redémarrage..."
+              systemctl restart redis-server
+              sleep 2
             fi
 
-            # 3. Préparation des dossiers
+            # 5. Préparation des dossiers
             mkdir -p /var/www/uploads/books
             mkdir -p /var/www/uploads/temp
+            mkdir -p logs
+            mkdir -p backups
 
-            # 4. Installation des dépendances
+            # 6. Validation du nouveau build
+            echo "📂 Validation du nouveau build..."
+            if [ ! -d "new_deploy/dist" ]; then
+              echo "❌ Nouveau build invalide - dossier dist manquant"
+              exit 1
+            fi
+
+            if [ ! -f "new_deploy/dist/main.js" ]; then
+              echo "❌ Nouveau build invalide - main.js manquant"
+              exit 1
+            fi
+
+            # 7. Déplacement du nouveau build
+            echo "📂 Installation du nouveau build..."
+            rm -rf dist.old 2>/dev/null || true
+            mv dist dist.old 2>/dev/null || true
+            mv new_deploy/dist ./dist
+            cp new_deploy/package.json ./package.json
+            cp new_deploy/package-lock.json ./package-lock.json
+            cp new_deploy/version.json ./version.json 2>/dev/null || true
+            rm -rf new_deploy
+
+            # 8. Installation des dépendances
             echo "📦 Installation des dépendances..."
-            npm ci --omit=dev --silent
+            npm ci --omit=dev --silent --no-audit --no-fund
 
-            # 5. Création du fichier .env complet
-            echo "🔐 Création du fichier .env..."
-            cat > .env << 'ENVEOF'
+            # 9. Gestion du fichier .env (sans écraser)
+            echo "🔐 Configuration de l'environnement..."
+            if [ ! -f ".env" ]; then
+              cat > .env << 'ENVEOF'
             # Serveur
             PORT=3001
             NODE_ENV=production
-            BASE_URL=https://api.diambra.net
+            BASE_URL=https://diambra.net
+
+            # CORS
+            CORS_ORIGINS=https://diambra.net,https://www.diambra.net
 
             # Sécurité
             JWT_SECRET=${{ secrets.JWT_SECRET }}
@@ -186,64 +354,180 @@ jobs:
             UPLOAD_DIR=/var/www/uploads/books
             PUBLIC_UPLOAD_URL=https://diambra.net/uploads
 
-            # Throttler (rate limiting)
+            # Rate Limiting
             THROTTLE_TTL=60
             THROTTLE_LIMIT=100
             ENVEOF
-
-            # 6. Vérification du build
-            if [ ! -f "dist/main.js" ]; then
-              echo "❌ ERREUR: dist/main.js introuvable"
-              ls -la dist/ 2>/dev/null || echo "  (dossier dist inexistant)"
-              exit 1
             fi
 
-            # 7. Patch de sécurité pour MongoDB (fallback)
-            echo "🔧 Application du patch de sécurité..."
+            # Mise à jour des secrets dans .env
+            if [ -n "${{ secrets.JWT_SECRET }}" ]; then
+              sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" .env
+            fi
+            if [ -n "${{ secrets.DEEPSEEK_API_KEY }}" ]; then
+              sed -i "s|^DEEPSEEK_API_KEY=.*|DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}|" .env
+            fi
+
+            # 10. Patch de sécurité fallback
+            echo "🔧 Application des patches de sécurité..."
             cp dist/main.js dist/main.js.backup
             sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
             sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+            sed -i 's/process.env.REDIS_HOST/"localhost"/g' dist/main.js
 
-            # 8. Redémarrage avec PM2
-            echo "🔄 Redémarrage du backend..."
-            pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
+            # 11. Health check avant déploiement
+            echo "🏥 Health check avant déploiement..."
+            BEFORE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
+            echo "Status avant: HTTP $BEFORE_STATUS"
+
+            # 12. Déploiement blue-green
+            echo "🔄 Déploiement blue-green..."
+            
+            # Arrêter la nouvelle instance si elle existe
+            pm2 delete ${{ env.PM2_NAME }}-new 2>/dev/null || true
+
+            # Démarrer la nouvelle instance
             pm2 start dist/main.js \
-              --name "${{ env.PM2_NAME }}" \
+              --name "${{ env.PM2_NAME }}-new" \
               --time \
-              --instances 2 \
+              --instances max \
               --exp-backoff-restart-delay=100 \
-              --node-args="--max-old-space-size=512" \
-              --merge-logs
-            
-            pm2 save
-            pm2 list
+              --node-args="--max-old-space-size=512 --expose-gc" \
+              --merge-logs \
+              --log-date-format "YYYY-MM-DD HH:mm:ss"
 
-            # 9. Vérification du bon fonctionnement
-            echo "⏳ Vérification du backend..."
-            sleep 10
+            # Attendre le démarrage
+            echo "⏳ Attente du démarrage (15s)..."
+            sleep 15
 
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }} || echo "000")
+            # Tester la nouvelle instance avec plusieurs tentatives
+            NEW_HEALTH="000"
+            for i in 1 2 3 4 5; do
+              NEW_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
+              if [ "$NEW_HEALTH" = "200" ] || [ "$NEW_HEALTH" = "301" ] || [ "$NEW_HEALTH" = "304" ]; then
+                break
+              fi
+              echo "Tentative $i/5 - HTTP $NEW_HEALTH, nouvelle tentative dans 3s..."
+              sleep 3
+            done
             
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ] || [ "$HTTP_CODE" = "404" ]; then
-              echo "✅ Backend opérationnel (HTTP $HTTP_CODE)"
+            if [ "$NEW_HEALTH" = "200" ] || [ "$NEW_HEALTH" = "301" ] || [ "$NEW_HEALTH" = "304" ]; then
+              echo "✅ Nouvelle instance opérationnelle (HTTP $NEW_HEALTH)"
+              # Swap des instances
+              pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
+              pm2 rename ${{ env.PM2_NAME }}-new ${{ env.PM2_NAME }}
+              echo "✅ Blue-green deploy réussi"
             else
-              echo "⚠️ Backend HTTP $HTTP_CODE - Vérification des logs:"
-              pm2 logs "${{ env.PM2_NAME }}" --lines 30 --nostream
-              echo "📄 Variables d'environnement chargées:"
-              cat .env | grep -E "MONGODB|REDIS|PORT|JWT" | sed 's/=.*/=***/'
+              echo "❌ Nouvelle instance non fonctionnelle (HTTP $NEW_HEALTH)"
+              pm2 logs "${{ env.PM2_NAME }}-new" --lines 30 --nostream
+              pm2 delete ${{ env.PM2_NAME }}-new 2>/dev/null || true
+              
+              # Rollback
+              if [ -d "dist.old" ]; then
+                echo "↩️ Rollback vers version précédente..."
+                rm -rf dist
+                mv dist.old dist
+                pm2 restart ${{ env.PM2_NAME }}
+              fi
               exit 1
             fi
 
-            # 10. Test spécifique de Redis
-            echo "🔄 Test de connexion Redis..."
-            if redis-cli ping | grep -q "PONG"; then
-              echo "✅ Redis répond correctement"
+            pm2 save --force
+            pm2 list
+
+            # 13. Vérification post-déploiement
+            echo "⏳ Vérification finale..."
+            sleep 5
+
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ]; then
+              echo "✅ Backend opérationnel (HTTP $HTTP_CODE)"
             else
-              echo "⚠️ Redis ne répond pas - vérifier la configuration"
+              echo "⚠️ Backend HTTP $HTTP_CODE - Logs d'erreur:"
+              pm2 logs "${{ env.PM2_NAME }}" --lines 30 --nostream
+              exit 1
             fi
+
+            # 14. Test des dépendances
+            echo "🔄 Tests de connectivité..."
+            
+            # Test MongoDB
+            if mongosh --eval "db.runCommand({ping: 1})" &>/dev/null; then
+              echo "✅ MongoDB opérationnel"
+            else
+              echo "⚠️ MongoDB ne répond pas"
+            fi
+
+            # Test Redis
+            if redis-cli ping | grep -q "PONG"; then
+              echo "✅ Redis opérationnel"
+            else
+              echo "⚠️ Redis ne répond pas"
+            fi
+
+            # 15. Nettoyage
+            echo "🧹 Nettoyage..."
+            rm -rf dist.old 2>/dev/null || true
+            find logs -name "*.log" -mtime +7 -delete 2>/dev/null || true
+            docker system prune -f 2>/dev/null || true
 
             echo "========================================="
             echo "🎉 Déploiement terminé avec succès !"
-            echo "🌐 Backend: https://api.diambra.net/api/v1"
+            echo "🌐 Backend: https://diambra.net/api/v1"
             echo "📊 Statut: $(pm2 list | grep ${{ env.PM2_NAME }} | awk '{print $10}')"
+            echo "🆔 Version: $(cat version.json 2>/dev/null | grep -o '"commit":"[^"]*"' | cut -d'"' -f4 || echo 'N/A')"
             echo "========================================="
+
+      - name: 📢 Notification Slack (optionnel)
+        if: success()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "✅ Déploiement Backend DIAMBRA"
+          SLACK_MESSAGE: "Version ${{ github.sha }} déployée avec succès"
+          SLACK_COLOR: good
+        continue-on-error: true
+
+  rollback:
+    name: ↩️ Rollback Automatique
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: failure() && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: ↩️ Rollback vers version précédente
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "========================================="
+            echo "↩️ ROLLBACK AUTOMATIQUE"
+            echo "========================================="
+            
+            cd ${{ env.APP_DIR }}
+            
+            # Trouver le dernier backup valide
+            LATEST_BACKUP=$(ls -t backups/ 2>/dev/null | head -1)
+            
+            if [ -n "$LATEST_BACKUP" ] && [ -d "backups/${LATEST_BACKUP}" ]; then
+              echo "📦 Restauration du backup: ${LATEST_BACKUP}"
+              
+              # Restaurer les fichiers
+              rm -rf dist
+              cp -r "backups/${LATEST_BACKUP}/dist" ./dist
+              cp "backups/${LATEST_BACKUP}/package.json" ./package.json 2>/dev/null || true
+              cp "backups/${LATEST_BACKUP}/package-lock.json" ./package-lock.json 2>/dev/null || true
+              
+              # Redémarrer
+              pm2 restart ${{ env.PM2_NAME }}
+              pm2 save
+              
+              echo "✅ Rollback effectué vers ${LATEST_BACKUP}"
+            else
+              echo "⚠️ Aucun backup trouvé"
+            fi

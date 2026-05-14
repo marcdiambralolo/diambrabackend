@@ -1,6 +1,6 @@
 # 🌟 Diambra - Backend API
 
-Backend NestJS complet pour la plateforme de voyance et spiritualité africaine **Diambra**.
+Backend NestJS complet  **Diambra**.
 
 ## 📋 Table des Matières
 
