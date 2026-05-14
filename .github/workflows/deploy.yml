@@ -364,12 +364,11 @@ jobs:
               sed -i "s|^DEEPSEEK_API_KEY=.*|DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}|" .env
             fi
 
-            # 10. Patch de sécurité fallback
+            # 10. Patch de sécurité fallback (uniquement pour MongoDB)
             echo "🔧 Application des patches de sécurité..."
             cp dist/main.js dist/main.js.backup
             sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
             sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
-            sed -i 's/process.env.REDIS_HOST/"localhost"/g' dist.main.js || true
 
             # 11. Health check avant déploiement
             echo "🏥 Health check avant déploiement..."
