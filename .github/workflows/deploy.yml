@@ -202,7 +202,7 @@ jobs:
             set -e
 
             echo "========================================="
-            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v6 - Final)"
+            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v7 - Final)"
             echo "📅 $(date)"
             echo "🆔 Déploiement ID: ${{ env.DEPLOY_TIMESTAMP }}"
             echo "========================================="
@@ -327,21 +327,18 @@ jobs:
             sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" .env
             sed -i "s|^DEEPSEEK_API_KEY=.*|DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}|" .env
 
-            # 10. Patch de sécurité MongoDB
+            # 10. Arrêter l'ancienne instance PM2
+            echo "🛑 Arrêt de l'ancienne instance..."
+            pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
+
+            # 11. Patch de sécurité MongoDB
             echo "🔧 Application des patches de sécurité..."
             cp dist/main.js dist/main.js.backup
             sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
             sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
 
-            # 11. Health check avant déploiement
-            echo "🏥 Health check avant déploiement..."
-            BEFORE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
-            echo "Status avant: HTTP $BEFORE_STATUS"
-
-            # 12. Déploiement blue-green (sans rename)
-            echo "🔄 Déploiement blue-green..."
-            
-            # Démarrer la nouvelle instance
+            # 12. Démarrer la nouvelle instance
+            echo "🔄 Démarrage de la nouvelle instance..."
             pm2 start dist/main.js \
               --name "${{ env.PM2_NAME }}" \
               --time \
@@ -351,39 +348,82 @@ jobs:
               --merge-logs \
               --log-date-format "YYYY-MM-DD HH:mm:ss"
 
-            # Attendre le démarrage
-            echo "⏳ Attente du démarrage (15s)..."
+            # 13. Vérification
+            echo "⏳ Vérification du backend..."
             sleep 15
 
-            # Tester la nouvelle instance
-            NEW_HEALTH="000"
-            for i in 1 2 3 4 5; do
-              NEW_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
-              if [ "$NEW_HEALTH" = "200" ] || [ "$NEW_HEALTH" = "301" ] || [ "$NEW_HEALTH" = "304" ]; then
-                break
-              fi
-              echo "Tentative $i/5 - HTTP $NEW_HEALTH, nouvelle tentative dans 3s..."
-              sleep 3
-            done
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
             
-            if [ "$NEW_HEALTH" = "200" ] || [ "$NEW_HEALTH" = "301" ] || [ "$NEW_HEALTH" = "304" ]; then
-              echo "✅ Backend opérationnel (HTTP $NEW_HEALTH)"
-              echo "✅ Blue-green deploy réussi"
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ]; then
+              echo "✅ Backend opérationnel (HTTP $HTTP_CODE)"
             else
-              echo "❌ Nouvelle instance non fonctionnelle (HTTP $NEW_HEALTH)"
+              echo "⚠️ Backend HTTP $HTTP_CODE - Logs d'erreur:"
               pm2 logs "${{ env.PM2_NAME }}" --lines 30 --nostream
               exit 1
             fi
 
+            # 14. Sauvegarde PM2
             pm2 save --force
             pm2 list
 
-            # 13. Nettoyage des anciennes instances
-            echo "🧹 Nettoyage des anciennes instances..."
-            pm2 delete ${{ env.PM2_NAME }}-old 2>/dev/null || true
+            # 15. Nettoyage
+            echo "🧹 Nettoyage..."
             rm -rf dist.old 2>/dev/null || true
 
             echo "========================================="
             echo "🎉 Déploiement terminé avec succès !"
             echo "🌐 Backend: https://diambra.net/api/v1"
             echo "========================================="
+
+      - name: 📢 Notification Slack (optionnel)
+        if: success()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_TITLE: "✅ Déploiement Backend DIAMBRA"
+          SLACK_MESSAGE: "Version ${{ github.sha }} déployée avec succès"
+          SLACK_COLOR: good
+        continue-on-error: true
+
+  rollback:
+    name: ↩️ Rollback Automatique
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: failure() && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: ↩️ Rollback vers version précédente
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "========================================="
+            echo "↩️ ROLLBACK AUTOMATIQUE"
+            echo "========================================="
+            
+            cd ${{ env.APP_DIR }}
+            
+            # Trouver le dernier backup valide
+            LATEST_BACKUP=$(ls -t backups/ 2>/dev/null | head -1)
+            
+            if [ -n "$LATEST_BACKUP" ] && [ -d "backups/${LATEST_BACKUP}" ]; then
+              echo "📦 Restauration du backup: ${LATEST_BACKUP}"
+              
+              # Restaurer les fichiers
+              rm -rf dist
+              cp -r "backups/${LATEST_BACKUP}/dist" ./dist
+              cp "backups/${LATEST_BACKUP}/package.json" ./package.json 2>/dev/null || true
+              cp "backups/${LATEST_BACKUP}/package-lock.json" ./package-lock.json 2>/dev/null || true
+              
+              # Redémarrer
+              pm2 restart ${{ env.PM2_NAME }}
+              pm2 save
+              
+              echo "✅ Rollback effectué vers ${LATEST_BACKUP}"
+            else
+              echo "⚠️ Aucun backup trouvé"
+            fi
