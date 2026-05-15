@@ -3,9 +3,7 @@ import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestj
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { NotificationsService } from '../notifications/notifications.service';
-import { GradeService } from '../users/grade.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { UserGradeProgressService } from '../users/user-grade-progress.service';
 import { AnalysisService } from './analysis.service';
 import { ConsultationsService } from './consultations.service';
 import { ConsultationDocument } from './schemas/consultation.schema';
@@ -17,9 +15,7 @@ export class ConsultationNotificationService {
         private readonly consultationsService: ConsultationsService,
         private readonly analysisService: AnalysisService,
         private readonly notificationsService: NotificationsService,
-        private readonly gradeService: GradeService,
-        private readonly userGradeProgressService: UserGradeProgressService,
-        @InjectModel(Rubrique.name) private rubriqueModel: Model<RubriqueDocument>,
+         @InjectModel(Rubrique.name) private rubriqueModel: Model<RubriqueDocument>,
         @InjectModel(User.name) private userModel: Model<UserDocument>,
      ) { }
 
@@ -48,11 +44,10 @@ export class ConsultationNotificationService {
     }
 
     private async createOrUpdateGradeProgress(consultation: ConsultationDocument) {
-        const userId: string = consultation.clientId.toString();
+   
         if (!consultation.choiceId) return;
 
-        const userGradeProgressModel = this.userGradeProgressService['userGradeProgressModel'];
-        const ids: string[] = Array.isArray(consultation.choiceId) ? consultation.choiceId.map(String) : [String(consultation.choiceId)];
+         const ids: string[] = Array.isArray(consultation.choiceId) ? consultation.choiceId.map(String) : [String(consultation.choiceId)];
         if (!ids.length) return;
         const rubrique = await this.rubriqueModel.findOne({ 'consultationChoices._id': ids[0] }, { 'consultationChoices.$': 1 }).lean().exec();
         const foundChoice = rubrique?.consultationChoices?.[0];
@@ -60,11 +55,7 @@ export class ConsultationNotificationService {
         if (!gradeIdForChoice) {
             throw new NotFoundException('Aucun grade associé au choix de consultation trouvé');
         }
-        await userGradeProgressModel.updateOne(
-            { userId, gradeId: gradeIdForChoice },
-            { $addToSet: { choiceIds: { $each: ids } } },
-            { upsert: true }
-        ).exec();
+        
     }
 
     async notifyConsultationUser(id: string) {
@@ -84,7 +75,6 @@ export class ConsultationNotificationService {
         await Promise.all([
             this.notificationsService.createConsultationResultNotification(userId, id, consultation.title),
             this.consultationsService.markAnalysisAsNotified(id),
-            this.gradeService.incrementConsultations(userId)
         ]);
         return consultation;
     }

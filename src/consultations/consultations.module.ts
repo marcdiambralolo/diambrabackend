@@ -7,11 +7,9 @@ import { GeolocationService } from '../common/services/geolocation.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
 import { OfferingsModule } from '../offerings/offerings.module';
- import { RubriqueModule } from '../rubriques/rubrique.module';
+import { RubriqueModule } from '../rubriques/rubrique.module';
 import { Rubrique, RubriqueSchema } from '../rubriques/rubrique.schema';
 import { RubriqueService } from '../rubriques/rubrique.service';
-import { GradeService } from '../users/grade.service';
-import { UserGradeProgressModule } from '../users/user-grade-progress.module';
  import { User, UserSchema } from '../users/schemas/user.schema';
 import { AnalysisDbService } from './analysis-db.service';
 import { AnalysisQueueService } from './analysis-queue.service';
@@ -37,7 +35,6 @@ import { UserConsultationChoice, UserConsultationChoiceSchema } from './schemas/
 import { UserConsultationChoiceController } from './user-consultation-choice.controller';
 import { UserConsultationChoiceService } from './user-consultation-choice.service';
 import { ConsultationNotificationService } from './consultation-notification.service';
-import { PractitionerReviewsModule } from '../reviews/practitioner-reviews.module';
 
 @Module({
   imports: [
@@ -52,18 +49,16 @@ import { PractitionerReviewsModule } from '../reviews/practitioner-reviews.modul
       { name: User.name, schema: UserSchema },
       { name: Rubrique.name, schema: RubriqueSchema },
       { name: Analysis.name, schema: AnalysisSchema },
-     ]),
+    ]),
     NotificationsModule,
-    RubriqueModule,
-    UserGradeProgressModule,
-     PractitionerReviewsModule,
+    RubriqueModule, 
   ],
   controllers: [ConsultationsController, ConsultationMessagesController, DeepseekController, UserConsultationChoiceController, ConsultationChoiceStatusController, ConsultationChoiceController, Slide4SectionDoorsController, AnalysisController, AnalysisRawController],
   providers: [AnalysisQueueService, ConsultationMessagesService, ConsultationsService, DeepseekService,
     UserConsultationChoiceService, AnalysisPromptService, AnalysisService,
-    AnalysisDbService,  ConsultationChoiceStatusService,
+    AnalysisDbService, ConsultationChoiceStatusService,
     ConsultationChoiceService, RubriqueService, UsersService, GeolocationService,
-    GradeService, ConsultationNotificationService],
-  exports: [ConsultationsService, ConsultationMessagesService, DeepseekService, UserConsultationChoiceService, AnalysisPromptService, AnalysisService, AnalysisDbService, AnalysisQueueService, ConsultationChoiceStatusService, ConsultationChoiceService, RubriqueService, UsersService, GradeService],
+    ConsultationNotificationService],
+  exports: [ConsultationsService, ConsultationMessagesService, DeepseekService, UserConsultationChoiceService, AnalysisPromptService, AnalysisService, AnalysisDbService, AnalysisQueueService, ConsultationChoiceStatusService, ConsultationChoiceService, RubriqueService, UsersService,],
 })
 export class ConsultationsModule { }

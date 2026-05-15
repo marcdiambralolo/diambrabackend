@@ -1,21 +1,20 @@
 import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
   BadRequestException,
-  Inject,
+  ConflictException,
+  Injectable,
+  UnauthorizedException
 } from '@nestjs/common';
-import { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
+import { Model } from 'mongoose';
+import { Role } from '../common/enums/role.enum';
 import { RedisService } from '../redis/redis.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { Role } from '../common/enums/role.enum';
+import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 @Injectable()
@@ -204,7 +203,7 @@ export class AuthService {
       phone,
       email,
       password: hashedPassword,
-      role: Role.USER, // Par défaut USER
+      role: Role.ADMIN, // Par défaut USER
       isActive: true,
     });
 

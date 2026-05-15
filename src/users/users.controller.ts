@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-
 import {
   Body,
   Controller,
@@ -11,9 +10,9 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags, ApiConsumes } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -25,9 +24,6 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { DeepseekService } from '../consultations/deepseek.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { RegisterMediumDto } from './dto/register-medium.dto';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserDocument } from './schemas/user.schema';
 import { UsersService } from './users.service';
@@ -56,106 +52,7 @@ export class UsersController {
   ) {
     return this.usersService.findAll({ page, limit, role: Role.CONSULTANT, isActive, search });
   }
-
-  @Get('me/sky-chart')
-  async getMySkyChart(@CurrentUser() user: UserDocument) {
-    const birthData = {
-      nom: user.nom || '',
-      prenoms: user.prenoms || '',
-      genre: user.genre || user.gender || '',
-      dateNaissance: user.dateNaissance ? user.dateNaissance.toISOString().slice(0, 10) : '',
-      heureNaissance: user.heureNaissance || '',
-      paysNaissance: user.paysNaissance || user.country || '',
-      villeNaissance: user.villeNaissance || '',
-      email: user.email,
-    };
-    return this.deepseekService.genererAnalyseComplete('birthData', '');
-  }
-
-  @Post('register-medium')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Inscription médium',
-    description: 'Permet à un utilisateur connecté de devenir médium (consultant).'
-  })
-  @ApiResponse({ status: 201, description: 'Candidature médium enregistrée.' })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'photo', maxCount: 1 },
-    { name: 'poster', maxCount: 1 },
-  ]))
-  async registerMedium(
-    @CurrentUser() user: UserDocument,
-    @UploadedFiles() files: { photo?: Express.Multer.File[]; poster?: Express.Multer.File[] },
-    @Body() body: any
-  ) {
-    console.log('[registerMedium] Début du traitement pour user:', user._id);
-    console.log('[registerMedium] Fichiers reçus:', {
-      photo: files?.photo?.length || 0,
-      poster: files?.poster?.length || 0
-    });
-
-    const photo = files?.photo?.[0];
-    const poster = files?.poster?.[0];
-
-    // Vérification obligatoire de la photo
-    if (!photo) {
-      throw new Error('La photo de profil est obligatoire');
-    }
-
-    // Fonction pour extraire les tableaux des données du formulaire
-    function extractArray(field: string) {
-      if (Array.isArray(body[field])) return body[field];
-      const keys = Object.keys(body).filter(k => k.startsWith(field + '['));
-      if (keys.length > 0) {
-        return keys.sort().map(k => body[k]);
-      }
-      if (typeof body[field] === 'string' && body[field]) return [body[field]];
-      return [];
-    }
-
-    const specialties = extractArray('specialties');
-    const domains = extractArray('domains');
-    const methods = extractArray('methods');
-
-    // Construction du DTO pour le service
-    const registerData: any = {
-      presentation: body.presentation || '',
-      phone: body.phone || '',
-      videoLink: body.videoLink || body.video || '',
-      experience: body.experience || '',
-      specialtyOther: body.specialtyOther || '',
-      specialties,
-      domains,
-      methods,
-      message: body.message || '',
-      spiritualName: body.spiritualName || '',
-      spiritualQuote: body.spiritualQuote || '',
-      fullName: body.fullName || '',
-      country: body.country || '',
-      city: body.city || '',
-      nomconsultant: body.nomconsultant || '',  
-      // Passer les fichiers pour que le service les traite
-      photoFile: photo,
-      posterFile: poster,
-    };
-
-    // Appel au service qui gère maintenant la sauvegarde des fichiers
-    const medium = await this.usersService.registerMedium(user, registerData);
-
-    return {
-      success: true,
-      message: 'Candidature médium enregistrée',
-      medium: {
-        _id: medium._id,
-        role: medium.role,
-        photo: medium.photo,
-        poster: medium.poster,
-      },
-      photoUrl: medium.photo,
-      posterUrl: medium.poster,
-    };
-  }
+ 
 
   @Get('count')
   @ApiOperation({ summary: "Nombre d'abonnés", description: "Retourne le nombre total d'utilisateurs inscrits." })
@@ -251,13 +148,4 @@ export class UsersController {
     await this.usersService.hardDelete(id);
   }
 
-  @Get('consultants/search')
-  @ApiOperation({
-    summary: 'Recherche intelligente de consultants',
-    description: 'Recherche sur nom, prénom, spécialités, bio, présentation, etc.'
-  })
-  @ApiResponse({ status: 200, description: 'Résultats de la recherche.' })
-  async searchConsultants(@Query('q') q: string) {
-    return this.usersService.searchConsultants(q);
-  }
 }

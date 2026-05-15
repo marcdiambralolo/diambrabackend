@@ -26,8 +26,7 @@ import { RedisModule } from './redis/redis.module';
 import { RubriqueModule } from './rubriques/rubrique.module';
 import { ServicesModule } from './services/services.module';
 import { UploadModule } from './uploads/upload.module';
-import { UserGradeProgressModule } from './users/user-grade-progress.module';
-import { UsersModule } from './users/users.module';
+ import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
@@ -88,8 +87,7 @@ import { WalletModule } from './wallet/wallet.module';
     RubriqueModule,
     CategoriesModule,
     CustomConfigModule,
-    UploadModule,
-    UserGradeProgressModule,
+    UploadModule, 
     RedisModule,
     MessagingModule,
     DoorsJobModule,

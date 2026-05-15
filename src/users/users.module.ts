@@ -4,14 +4,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConsultationsModule } from '../consultations/consultations.module';
 import { DeepseekService } from '../consultations/deepseek.service';
 import { Consultation, ConsultationSchema } from '../consultations/schemas/consultation.schema';
- import { GradeController } from './grade.controller';
-import { GradeService } from './grade.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { UserAccessController } from './user-access.controller';
 import { UserAccessService } from './user-access.service';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UserGradeProgressModule } from './user-grade-progress.module';
 
 @Module({
   imports: [
@@ -21,10 +18,9 @@ import { UserGradeProgressModule } from './user-grade-progress.module';
     ]),
     ConsultationsModule,
     HttpModule,
-    UserGradeProgressModule,
   ],
-  controllers: [UsersController, GradeController, UserAccessController],
-  providers: [UsersService, DeepseekService, GradeService, UserAccessService],
-  exports: [UsersService, GradeService, UserAccessService],
+  controllers: [UsersController, UserAccessController],
+  providers: [UsersService, DeepseekService, UserAccessService],
+  exports: [UsersService, UserAccessService],
 })
 export class UsersModule {}
