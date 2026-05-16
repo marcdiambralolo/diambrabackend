@@ -8,7 +8,6 @@ import { OfferingsService } from './offerings.service';
 interface CreateOfferingDto {
   name: string;
   price: number;
-  description: string;
 }
 
 interface UpdateOfferingDto extends Partial<CreateOfferingDto> {
@@ -21,8 +20,6 @@ interface UpdateOfferingDto extends Partial<CreateOfferingDto> {
 export class OfferingsController {
   constructor(private readonly offeringsService: OfferingsService) {}
 
-  
- 
   @Get()
   async findAll() {
     const offerings = await this.offeringsService.findAll();
@@ -52,8 +49,10 @@ export class OfferingsController {
   async create(
     @Body() data: any,
   ) {
-   
-    const requiredFields = ['name', 'price', 'description'];
+   console.log(`[OfferingsController][POST] Création d'une nouvelle offrande`);
+   console.log(`[OfferingsController][POST] Donnees recues: ${JSON.stringify(data)}`);
+    // Validation des champs obligatoires
+    const requiredFields = ['name', 'price'];
     const missingFields = requiredFields.filter(field => !data[field]);
     
     if (missingFields.length > 0) {
@@ -63,27 +62,16 @@ export class OfferingsController {
     
     // Validation des types
     const price = Number(data.price);
-    const priceUSD = Number(data.priceUSD);
+    
     
     if (isNaN(price) || price <= 0) {
       throw new BadRequestException('Le prix doit être un nombre positif');
     }
-    
-    if (isNaN(priceUSD) || priceUSD <= 0) {
-      throw new BadRequestException('Le prix USD doit être un nombre positif');
-    }
-    
-    // Validation de la catégorie
-    const validCategories = ['animal', 'vegetal', 'beverage'];
-    if (!validCategories.includes(data.category)) {
-      throw new BadRequestException(`Catégorie invalide. Valeurs autorisées: ${validCategories.join(', ')}`);
-    }
-    
+   
     // Construction de l'objet à créer
     const createData: CreateOfferingDto = {
       name: data.name.trim(),
-      price,
-      description: data.description.trim(),
+      price, 
     };
      
     try {
@@ -124,16 +112,7 @@ export class OfferingsController {
       }
       updatePayload.price = price;
     }
-   
-    
-    if (updateData.description !== undefined) {
-      updatePayload.description = updateData.description.trim();
-    }
-    
-    // Gestion de l'illustration
      
-    
-    // Vérifier s'il y a des modifications
     if (Object.keys(updatePayload).length === 0) {
       throw new BadRequestException('Aucune donnée de mise à jour fournie');
     }

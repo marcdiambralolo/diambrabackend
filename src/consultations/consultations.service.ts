@@ -389,9 +389,6 @@ export class ConsultationsService {
           ...alt, // conserve offeringId et quantity
           name: found.name,
           price: found.price,
-          priceUSD: found.priceUSD,
-          category: found.category,
-          description: found.description,
         }
         : alt;
     });

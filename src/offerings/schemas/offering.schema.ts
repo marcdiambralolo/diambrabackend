@@ -8,16 +8,7 @@ export class Offering extends Document {
   name!: string;
 
   @Prop({ required: true })
-  price!: number;
-
-  @Prop({ required: true })
-  priceUSD!: number;
-
-  @Prop({ required: true, enum: ['animal', 'vegetal', 'beverage'] })
-  category!: string;
-
-  @Prop({ required: true })
-  description!: string;
+  price!: number; 
 }
 
 export const OfferingSchema = SchemaFactory.createForClass(Offering);
