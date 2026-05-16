@@ -10,20 +10,18 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UseGuards
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
-import { ConsultationStatus, ConsultationType } from '../common/enums/consultation-status.enum';
+import { ConsultationStatus } from '../common/enums/consultation-status.enum';
 import { Permission } from '../common/enums/permission.enum';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { GeolocationService } from '../common/services/geolocation.service';
 import { UserDocument } from '../users/schemas/user.schema';
-import { AnalysisQueueService } from './analysis-queue.service';
 import { ConsultationsService } from './consultations.service';
 import { SendConsultationMessageDto } from './dto/send-consultation-message.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
@@ -34,10 +32,9 @@ import { UpdateConsultationDto } from './dto/update-consultation.dto';
 export class ConsultationsController {
   constructor(
     private readonly consultationsService: ConsultationsService,
-    private readonly analysisQueueService: AnalysisQueueService,
     private readonly geolocationService: GeolocationService,
   ) { }
-   
+
 
   /**
    * POST /consultations
@@ -48,29 +45,22 @@ export class ConsultationsController {
   @UseGuards(PermissionsGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Créer une consultation (utilisateur connecté)',
+    summary: 'Créer un jeu (utilisateur connecté)',
     description:
       "Crée une consultation en associant automatiquement l'utilisateur connecté comme client.",
   })
   @ApiResponse({ status: 201, description: 'Consultation créée avec succès.' })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
-  async create(@Body() body: any, @CurrentUser() user: UserDocument, @Req() request: any) {
+  async create(@Body() body: any, @CurrentUser() user: UserDocument) {
 
-    // Déterminer le pays depuis l'IP ou les données du formulaire
-    const country = this.geolocationService.determineCountry(request, body.formData);
+ 
 
-    const consultation = await this.consultationsService.create(user._id.toString(), body, country);
-    const consultationId = consultation.consultationId || consultation.id || consultation._id?.toString?.();
-    const isFreeCinqEtoilesConsultation = consultation.type === ConsultationType.CINQ_ETOILES;
-    const analysisJob = isFreeCinqEtoilesConsultation && consultationId
-      ? await this.analysisQueueService.enqueueAnalysis(consultationId)
-      : null;
+    const consultation = await this.consultationsService.create(user._id.toString(), body, "country");
     const normalizedConsultation = this.consultationsService.serializeConsultationForFrontend(consultation);
 
     return {
       success: true,
       message: 'Consultation créée avec succès',
-      analysisJob,
       consultation: normalizedConsultation,
     };
   }
@@ -124,7 +114,7 @@ export class ConsultationsController {
       total: result.total,
     };
   }
- 
+
 
   /**
    * GET /consultations/thread/consultant/:consultantId
@@ -184,7 +174,7 @@ export class ConsultationsController {
       totalPages: result.totalPages,
     };
   }
- 
+
   /**
    * POST /consultations/:id/messages
    * Envoyer un message consultant sur une consultation assignée
@@ -224,23 +214,11 @@ export class ConsultationsController {
     @CurrentUser() user: UserDocument,
   ) {
     const { consultation } = await this.consultationsService.findOneForUser(id, user);
-     const analysisStatus = await this.analysisQueueService.getAnalysisJobStatus(id);
     const messaging = await this.consultationsService.getConsultationThreadForUser(id, user);
 
     return {
       success: true,
       consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
-       analysisStatus: analysisStatus || {
-        consultationId: id,
-        jobId: id,
-        status: null,
-        attempts: 0,
-        errorMessage: null,
-        startedAt: null,
-        finishedAt: null,
-        dateGeneration: null,
-        hasResult: false,
-      },
       messaging,
     };
   }
@@ -271,18 +249,6 @@ export class ConsultationsController {
   async findOne(@Param('id') id: string) {
     const consultation: any = await this.consultationsService.findOne(id);
 
-    if (
-      consultation.type === ConsultationType.CINQ_ETOILES &&
-      consultation.analysisNotified !== true &&
-      consultation.status !== ConsultationStatus.COMPLETED
-    ) {
-      try {
-        await this.analysisQueueService.enqueueAnalysis(id);
-      } catch (error) {
-        console.warn(`[consultations.findOne] Impossible de réenfiler l'analyse gratuite ${id}:`, error instanceof Error ? error.message : error);
-      }
-    }
-
     const consultationObj = consultation.toObject();
 
     let alternatives = consultation.alternatives || consultationObj.alternatives || [];
@@ -295,54 +261,9 @@ export class ConsultationsController {
       consultation: this.consultationsService.serializeConsultationForFrontend({
         ...consultationObj,
         alternatives,
-        prompt: consultation.prompt,
       }),
     };
-  }  
-
-  @Post(':id/generate-analysis-job')
-  @HttpCode(HttpStatus.ACCEPTED)
-  @ApiOperation({
-    summary: "Enfiler la génération d'analyse",
-    description: 'Crée un job Redis pour générer l’analyse de manière asynchrone via un worker.',
-  })
-  @ApiResponse({ status: 202, description: 'Job de génération créé ou déjà en cours.' })
-  async enqueueAnalysisJob(@Param('id') id: string) {
-    console.log(`[enqueueAnalysisJob] Enfilage de l'analyse pour consultation ${id}`);
-    return this.analysisQueueService.enqueueAnalysis(id);
   }
-
-  @Public()
-  @Get(':id/analysis-status')
-  @ApiOperation({
-    summary: "Lire le statut d'une analyse asynchrone",
-    description: 'Retourne le statut courant du job d’analyse et la présence éventuelle du résultat.',
-  })
-  @ApiResponse({ status: 200, description: 'Statut du job récupéré.' })
-  @ApiResponse({ status: 404, description: 'Aucun job ou résultat trouvé pour cette consultation.' })
-  async getAnalysisStatus(@Param('id') id: string) {
-    const status = await this.analysisQueueService.getAnalysisJobStatus(id);
-
-    if (!status) {
-      return {
-        consultationId: id,
-        jobId: id,
-        status: null,
-        attempts: 0,
-        errorMessage: null,
-        startedAt: null,
-        finishedAt: null,
-        dateGeneration: null,
-        hasResult: false,
-      };
-    }
-
-    return status;
-  }
-
-  
-
-   
 
   /**
    * PATCH /consultations/:id
@@ -395,5 +316,5 @@ export class ConsultationsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     await this.consultationsService.remove(id, user._id.toString(), user.role!);
-  }    
+  }
 }

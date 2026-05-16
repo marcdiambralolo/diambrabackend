@@ -421,7 +421,6 @@ export class ConsultationsService {
     const mappedFormData = formData || {};
 
     // Déterminer le pays (priorité: paramètre country, puis DTO, puis formData)
-    const finalCountry = country || createConsultationDto.country || formData?.country || formData?.paysNaissance || null;
 
     // S'assurer que choiceId est bien présent
     let choiceId = dtoChoiceId;
@@ -429,7 +428,6 @@ export class ConsultationsService {
       choiceId = choice._id;
     }
 
-    const isFreeCinqEtoilesConsultation = type === ConsultationType.CINQ_ETOILES;
 
     // Création de la consultation
     const consultation = new this.consultationModel({
@@ -440,13 +438,13 @@ export class ConsultationsService {
       rubriqueId,
       formData: mappedFormData,
       status: status || ConsultationStatus.PENDING,
-      price: isFreeCinqEtoilesConsultation ? 0 : (price ?? 0),
-      isPaid: isFreeCinqEtoilesConsultation,
+      price: price || 0 ,
+      isPaid: true,
       requiredOffering: requiredOffering || null,
       requiredOfferingsDetails: requiredOfferingsDetails || [],
       choice: choice || null,
       choiceId: choiceId,
-      country: finalCountry,
+      country: "Cote d'ivoire",
     });
 
     await consultation.save();

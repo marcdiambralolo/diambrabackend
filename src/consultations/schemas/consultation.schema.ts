@@ -131,9 +131,6 @@ export class Consultation {
   @Prop({ type: RequiredOffering, required: false, default: null })
   requiredOffering?: RequiredOffering;
 
-  @Prop({ type: OfferingAlternative, required: false, default: [] })
-  alternatives?: Offering;
-
   @Prop({ type: [RequiredOfferingDetail], default: [] })
   requiredOfferingsDetails!: RequiredOfferingDetail[];
 
