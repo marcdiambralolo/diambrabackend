@@ -77,7 +77,6 @@ async function bootstrap() {
 
   // ✅ Préfixe global
   app.setGlobalPrefix('api/v1');
-
   // ✅ Démarrer le serveur
   const port = process.env.PORT || 3001;
   const server = await app.listen(port);
