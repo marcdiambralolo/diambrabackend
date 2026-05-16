@@ -8,7 +8,7 @@ export class Offering extends Document {
   name!: string;
 
   @Prop({ required: true })
-  price!: number; 
+  price!: number;
 }
 
 export const OfferingSchema = SchemaFactory.createForClass(Offering);

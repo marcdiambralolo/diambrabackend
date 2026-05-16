@@ -52,10 +52,7 @@ export class ConsultationsController {
   @ApiResponse({ status: 201, description: 'Consultation créée avec succès.' })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   async create(@Body() body: any, @CurrentUser() user: UserDocument) {
-
- 
-
-    const consultation = await this.consultationsService.create(user._id.toString(), body, "country");
+    const consultation = await this.consultationsService.create(user._id.toString(), body);
     const normalizedConsultation = this.consultationsService.serializeConsultationForFrontend(consultation);
 
     return {
@@ -101,7 +98,6 @@ export class ConsultationsController {
     const result = await this.consultationsService.findAll({
       page,
       limit,
-      status,
       type,
       clientId: userId,
     });

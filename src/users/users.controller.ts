@@ -21,7 +21,6 @@ import { Role } from '../common/enums/role.enum';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { DeepseekService } from '../consultations/deepseek.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -34,25 +33,7 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly deepseekService: DeepseekService,
   ) { }
-
-  @Get('consultants')
-  @UseGuards(PermissionsGuard)
-  @ApiOperation({
-    summary: 'Lister les consultants',
-    description: 'Retourne la liste de tous les consultants (utilisateurs avec le rôle CONSULTANT).',
-  })
-  @ApiResponse({ status: 200, description: 'Liste des consultants.' })
-  findConsultants(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-    @Query('isActive') isActive?: boolean,
-    @Query('search') search?: string,
-  ) {
-    return this.usersService.findAll({ page, limit, role: Role.CONSULTANT, isActive, search });
-  }
- 
 
   @Get('count')
   @ApiOperation({ summary: "Nombre d'abonnés", description: "Retourne le nombre total d'utilisateurs inscrits." })
@@ -147,5 +128,4 @@ export class UsersController {
   async hardDelete(@Param('id') id: string) {
     await this.usersService.hardDelete(id);
   }
-
 }

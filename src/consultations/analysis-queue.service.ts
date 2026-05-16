@@ -15,11 +15,9 @@ export class AnalysisQueueService implements OnApplicationShutdown {
   private queue: Queue<AnalysisJobData> | null = null;
   private redisUnavailableUntil = 0;
 
-
-
   constructor(
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async enqueueAnalysis(consultationId: string) {
     console.log(`[enqueueAnalysis][${consultationId}] je ne comprends pas pourquoi je suis appelé... Enqueue de l'analyse pour consultation ${consultationId}`);
@@ -33,7 +31,7 @@ export class AnalysisQueueService implements OnApplicationShutdown {
         'La file Redis est temporairement indisponible. Réessayez dans quelques secondes.',
       );
     }
- 
+
 
     let job;
     try {
@@ -79,18 +77,12 @@ export class AnalysisQueueService implements OnApplicationShutdown {
   }
 
   async getAnalysisJobStatus(consultationId: string) {
-    
-
     const hasResult = true;
-    
-
     return {
       consultationId,
-     
       hasResult,
     };
   }
- 
 
   async onApplicationShutdown() {
     await this.resetQueue();

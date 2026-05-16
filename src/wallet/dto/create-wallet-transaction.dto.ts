@@ -1,19 +1,16 @@
-import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 export class OfferingItemDto {
   @IsString()
-  offeringId: string;  
+  offeringId!: string;  
 
   @IsNumber()
-  quantity: number;
+  quantity!: number;
 
   @IsString()
   @IsOptional()
   name?: string;
-
-  @IsString()
-  @IsOptional()
 
   @IsString()
   @IsOptional()
@@ -32,7 +29,6 @@ export class OfferingItemDto {
   totalPrice?: number;
 }
 
-
 export class CreateWalletTransactionDto {
   @IsString()
   @IsOptional()
@@ -47,12 +43,12 @@ export class CreateWalletTransactionDto {
   status?: 'pending' | 'completed' | 'failed' | 'cancelled';
 
   @IsNumber()
-  totalAmount: number;
+  totalAmount!: number;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OfferingItemDto)
-  items: OfferingItemDto[];
+  items!: OfferingItemDto[];
 
   @IsString()
   @IsOptional()

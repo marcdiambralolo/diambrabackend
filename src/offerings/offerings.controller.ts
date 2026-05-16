@@ -151,9 +151,7 @@ export class OfferingsController {
     const offering = await this.offeringsService.findById(id);
     if (!offering) {
       throw new NotFoundException('Offrande non trouvée');
-    }
-    
-    
+    } 
     
     const deleted = await this.offeringsService.deleteById(id);
     if (!deleted) {

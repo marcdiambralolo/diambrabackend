@@ -7,47 +7,47 @@ export type PaymentDocument = Payment & Document;
 @Schema({ timestamps: true })
 export class Payment {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
-  userId: MongooseSchema.Types.ObjectId;
+  userId!: MongooseSchema.Types.ObjectId;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Consultation', required: false })
-  consultationId: MongooseSchema.Types.ObjectId;
+  consultationId!: MongooseSchema.Types.ObjectId;
 
   @Prop({ required: true, min: 0 })
-  amount: number;
+  amount!: number;
 
   @Prop({ default: 'EUR' })
-  currency: string;
+  currency!: string;
 
   @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
-  status: PaymentStatus;
+  status!: PaymentStatus;
 
   @Prop({ type: String, enum: PaymentMethod, required: true })
-  method: PaymentMethod;
+  method!: PaymentMethod;
 
   @Prop({ default: null })
-  transactionId: string; // ID de la transaction externe (Stripe, PayPal, etc.)
+  transactionId!: string; // ID de la transaction externe (Stripe, PayPal, etc.)
 
   @Prop({ default: null })
-  moneyFusionToken: string; // Token MoneyFusion (idempotence)
+  moneyFusionToken!: string; // Token MoneyFusion (idempotence)
 
   @Prop({ type: Object, default: {} })
-  metadata: {
+  metadata!: {
     stripePaymentIntentId?: string;
     paypalOrderId?: string;
     [key: string]: any;
   };
 
   @Prop({ default: null })
-  paidAt: Date;
+  paidAt!: Date;
 
   @Prop({ default: null })
-  refundedAt: Date;
+  refundedAt!: Date;
 
   @Prop({ default: 0 })
-  refundAmount: number;
+  refundAmount!: number;
 
   @Prop({ default: null })
-  errorMessage: string;
+  errorMessage!: string;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

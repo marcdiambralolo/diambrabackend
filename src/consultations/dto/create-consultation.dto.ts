@@ -1,16 +1,14 @@
 ﻿import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsEnum,
+  IsArray,
+  IsDateString,
+  IsNumber,
   IsObject,
   IsOptional,
-  IsNumber,
-  IsDateString,
-  Min,
+  IsString,
   MaxLength,
-  IsArray,
+  Min
 } from 'class-validator';
-import { ConsultationType } from '../../common/enums/consultation-status.enum';
 
 export class ConsultationChoiceDto {
   @IsObject()
@@ -77,11 +75,7 @@ export class CreateConsultationDto {
 
   @IsOptional()
   visible?: boolean;
-
-  @IsEnum(ConsultationType)
-  @IsOptional()
-  type?: ConsultationType;
-
+  
   @IsOptional()
   @IsString()
   status?: string;

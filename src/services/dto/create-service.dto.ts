@@ -1,38 +1,33 @@
 import {
-  IsString,
-  IsEnum,
-  IsNumber,
   IsArray,
-  IsOptional,
   IsBoolean,
-  Min,
+  IsNumber,
+  IsOptional,
+  IsString,
   MaxLength,
+  Min
 } from 'class-validator';
-import { ConsultationType } from '../../common/enums/consultation-status.enum';
 
 export class CreateServiceDto {
   @IsString()
   @MaxLength(200)
-  name: string;
+  name!: string;
 
   @IsString()
   @MaxLength(100)
-  slug: string;
+  slug!: string;
 
   @IsString()
   @MaxLength(500)
-  description: string;
+  description!: string;
 
   @IsString()
   @IsOptional()
-  longDescription?: string;
-
-  @IsEnum(ConsultationType)
-  type: ConsultationType;
+  longDescription?: string; 
 
   @IsNumber()
   @Min(0)
-  price: number;
+  price!: number;
 
   @IsNumber()
   @Min(0)

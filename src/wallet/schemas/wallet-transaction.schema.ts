@@ -8,20 +8,19 @@ export class OfferingItem {
   @Prop({ required: true, type: 'objectId', ref: 'Offering' })
   offeringId!: string; // _id de l'offrande
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   quantity!: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   name!: string;
 
+  @Prop({ required: false })
+  category?: string;
 
-  @Prop({ required: true })
-  category!: string;
-
-  @Prop({ required: true })
+  @Prop({ required: false })
   unitPrice!: number;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   totalPrice!: number;
 }
 
@@ -29,10 +28,10 @@ export const OfferingItemSchema = SchemaFactory.createForClass(OfferingItem);
 
 @Schema({ timestamps: true })
 export class WalletTransaction {
-  @Prop({ required: true })
+  @Prop({ required: false })
   userId!: string;
 
-  @Prop({ required: false, unique: false, sparse: true })
+  @Prop({ required: false, unique: false, sparse: false })
   transactionId?: string;
 
   @Prop({ required: false })
@@ -41,7 +40,7 @@ export class WalletTransaction {
   @Prop({ required: false, enum: ['pending', 'completed', 'failed', 'cancelled'] })
   status?: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   totalAmount!: number;
 
   @Prop({ type: [OfferingItemSchema], default: [] })

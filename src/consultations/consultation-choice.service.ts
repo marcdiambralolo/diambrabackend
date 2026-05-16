@@ -21,8 +21,6 @@ export class ConsultationChoiceService {
       throw new NotFoundException(`Choix de consultation avec l'ID ${id} introuvable`);
     }
 
- 
-
     return {
       _id: choice._id,
       title: choice.title,
@@ -52,7 +50,6 @@ export class ConsultationChoiceService {
             ...found as any, // conserve _id, title, description, frequence, participants, found,
             rubriqueId: rubrique._id,
             rubriqueTitle: rubrique.titre,
-            pdfFile: (found as any)?.pdfFile ?? null,
           };
         }
       }
@@ -72,45 +69,6 @@ export class ConsultationChoiceService {
     return choice;
   }
 
-  async updatePrompt(id: string, prompt: string | null | undefined): Promise<ConsultationChoice> {
-    const choice = await this.consultationChoiceModel.findByIdAndUpdate(
-      id,
-      { prompt: prompt || null },
-      { new: true, runValidators: true }
-    ).exec();
-
-    if (!choice) {
-      throw new NotFoundException(`Choix de consultation avec l'ID ${id} introuvable`);
-    }
-
-    return choice;
-  }
-
-  async findAllWithoutPrompts(): Promise<any[]> {
-    // Récupère toutes les rubriques et leurs choix
-    const rubriques = await this.rubriqueModel.find().populate('categorieId').exec();
-    const choicesWithoutPrompt: any[] = [];
-    for (const rubrique of rubriques) {
-      if (rubrique.consultationChoices && rubrique.consultationChoices.length > 0) {
-        for (const choice of rubrique.consultationChoices) {
-          if (!choice.prompt || choice.prompt === '' || choice.prompt === null) {
-            choicesWithoutPrompt.push({
-              _id: choice._id,
-              title: choice.title,
-              description: choice.description,
-              offering: choice.offering,
-              order: choice.order,
-              rubriqueId: rubrique._id,
-              rubriqueTitle: rubrique.titre,
-              prompt: choice.prompt,
-              pdfFile: choice.pdfFile ?? null,
-            });
-          }
-        }
-      }
-    }
-    return choicesWithoutPrompt;
-  }
 
   async findAllChoices(): Promise<any[]> {
     // Récupère toutes les rubriques et leurs choix
@@ -124,11 +82,8 @@ export class ConsultationChoiceService {
             title: choice.title,
             description: choice.description,
             offering: choice.offering,
-            order: choice.order,
             rubriqueId: rubrique._id,
             rubriqueTitle: rubrique.titre,
-            prompt: choice.prompt,
-            pdfFile: choice.pdfFile ?? null,
           });
 
         }
@@ -137,28 +92,4 @@ export class ConsultationChoiceService {
     return choicesWithoutPrompt;
   }
 
-  async findAllWithPrompts(): Promise<any[]> {
-    const rubriques = await this.rubriqueModel.find().populate('categorieId').exec();
-    const allChoices: any[] = [];
-    for (const rubrique of rubriques) {
-      if (rubrique.consultationChoices && rubrique.consultationChoices.length > 0) {
-        for (const choice of rubrique.consultationChoices) {
-          if (choice.prompt && choice.prompt !== '' && choice.prompt !== null) {
-            allChoices.push({
-              _id: choice._id,
-              title: choice.title,
-              description: choice.description,
-              offering: choice.offering,
-              order: choice.order,
-              rubriqueId: rubrique._id,
-              rubriqueTitle: rubrique.titre,
-              prompt: choice.prompt,
-              pdfFile: choice.pdfFile ?? null,
-            });
-          }
-        }
-      }
-    }
-    return allChoices;
-  }
 }

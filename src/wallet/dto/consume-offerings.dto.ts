@@ -3,19 +3,19 @@ import { Type } from 'class-transformer';
 
 export class ConsumeOfferingDto {
   @IsString()
-  offeringId: string;
+  offeringId!: string;
 
   @IsNotEmpty()
-  quantity: number;
+  quantity!: number;
 }
 
 export class ConsumeOfferingsDto {
   @IsString()
   @IsNotEmpty()
-  consultationId: string;
+  consultationId!: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ConsumeOfferingDto)
-  offerings: ConsumeOfferingDto[];
+  offerings!: ConsumeOfferingDto[];
 }

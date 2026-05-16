@@ -1,12 +1,11 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
   Param,
   Post,
   Req,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -72,48 +71,7 @@ export class UserAccessController {
     return { hasAccess };
   }
 
-  @Post('activate-premium')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Activer un abonnement Premium pour l\'utilisateur connecté',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Abonnement Premium activé',
-  })
-  async activateMyPremium(
-    @Req() req: Request & { user: any },
-    @Body() body: { rubriqueId: string; durationInDays?: number },
-  ): Promise<{ success: boolean }> {
-    await this.userAccessService.activatePremiumSubscription(
-      req.user._id,
-      body.rubriqueId,
-      body.durationInDays,
-    );
-    return { success: true };
-  }
-
-  @Post('activate-integral')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Activer un abonnement Intégral pour l\'utilisateur connecté',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Abonnement Intégral activé',
-  })
-  async activateMyIntegral(
-    @Req() req: Request & { user: any },
-    @Body() body: { durationInDays?: number },
-  ): Promise<{ success: boolean }> {
-    await this.userAccessService.activateIntegralSubscription(
-      req.user._id,
-      body.durationInDays,
-    );
-    return { success: true };
-  }
+  
 
   @Delete('cancel-subscription')
   @UseGuards(JwtAuthGuard)

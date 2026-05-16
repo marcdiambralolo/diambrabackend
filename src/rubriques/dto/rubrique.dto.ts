@@ -11,17 +11,7 @@ export class ConsultationOfferingDto {
   quantity?: number = 1;
 }
 
- 
-
-class ConsultationChoiceDto {
-  @IsOptional()
-  @IsString()
-  gradeId?: string;
-  
-  @IsOptional()
-  order?: number;
-
-
+class ConsultationChoiceDto { 
   @IsOptional()
   @IsString()
   choiceId?: string;
@@ -49,28 +39,14 @@ class ConsultationChoiceDto {
 
   @IsString()
   description!: string;
-
-  @IsString()
-  @IsOptional()
-  frequence?: 'UNE_FOIS_VIE' | 'ANNUELLE' | 'MENSUELLE' | 'QUOTIDIENNE' | 'LIBRE';
-
-  @IsString()
-  @IsOptional()
-  participants?: 'SOLO' | 'AVEC_TIERS' | 'GROUPE' | 'POUR_TIERS';
-
+ 
   offering!: {
     alternatives: ConsultationOfferingDto[];
   };
-  @IsString()
-  @IsOptional()
-  prompt?: string;
-  @IsString()
-  @IsOptional()
-  pdfFile?: string;
+  
 }
 
 export class RubriqueDto {
-
   @IsOptional()
   @IsString()
   categorie: string = 'GENERAL';
@@ -88,10 +64,7 @@ export class RubriqueDto {
   @IsOptional()
   @IsString()
   typeconsultation?: string;
-
-  @IsString()
-  @IsOptional()
-  pdfFile?: string;
+ 
   @IsArray()
   consultationChoices!: ConsultationChoiceDto[];
 }

@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { Model } from 'mongoose';
 import { UserType } from '../common/enums/user-type.enum';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 @Injectable()
 export class UserAccessService {
@@ -11,7 +11,7 @@ export class UserAccessService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
-  ) {}
+  ) { }
 
   /**
    * Vérifie si un utilisateur a accès à une rubrique
@@ -92,54 +92,7 @@ export class UserAccessService {
       );
     }
   }
-
-  /**
-   * Active un abonnement Premium pour un utilisateur
-   */
-  async activatePremiumSubscription(
-    userId: string,
-    rubriqueId: string,
-    durationInDays: number = 365,
-  ): Promise<void> {
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + durationInDays);
-
-    await this.userModel.findByIdAndUpdate(userId, {
-      userType: UserType.PREMIUM,
-      premiumRubriqueId: new Types.ObjectId(rubriqueId),
-      subscriptionStartDate: startDate,
-      subscriptionEndDate: endDate,
-    });
-
-    this.logger.log(
-      `Abonnement Premium activé pour l'utilisateur ${userId} sur la rubrique ${rubriqueId}`,
-    );
-  }
-
-  /**
-   * Active un abonnement Intégral pour un utilisateur
-   */
-  async activateIntegralSubscription(
-    userId: string,
-    durationInDays: number = 365,
-  ): Promise<void> {
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + durationInDays);
-
-    await this.userModel.findByIdAndUpdate(userId, {
-      userType: UserType.INTEGRAL,
-      premiumRubriqueId: undefined,
-      subscriptionStartDate: startDate,
-      subscriptionEndDate: endDate,
-    });
-
-    this.logger.log(
-      `Abonnement Intégral activé pour l'utilisateur ${userId}`,
-    );
-  }
-
+ 
   /**
    * Annule l'abonnement d'un utilisateur et le repasse en BASIQUE
    */

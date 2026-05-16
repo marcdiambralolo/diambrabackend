@@ -1,9 +1,7 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { forwardRef } from '@nestjs/common';
-import { Consultation } from '../consultations/schemas/consultation.schema';
-import { ConsultationSchema } from '../consultations/schemas/consultation.schema';
 import { ConsultationsModule } from '../consultations/consultations.module';
+import { Consultation, ConsultationSchema } from '../consultations/schemas/consultation.schema';
 import { OfferingStockModule } from '../offerings/offering-stock.module';
 import { OfferingsModule } from '../offerings/offerings.module';
 import { WalletTransaction, WalletTransactionSchema } from './schemas/wallet-transaction.schema';

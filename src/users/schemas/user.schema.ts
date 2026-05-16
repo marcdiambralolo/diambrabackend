@@ -4,8 +4,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Role } from '../../common/enums/role.enum';
 import { Permission } from '../../common/enums/permission.enum';
-import { UserGrade } from '../../common/enums/user-grade.enum';
-import { UserType } from '../../common/enums/user-type.enum';
+ import { UserType } from '../../common/enums/user-type.enum';
 
 export type UserDocument = User & Document;
 
@@ -139,11 +138,7 @@ export class User {
   totalConsultations?: number;
 
   @Prop({ default: 0, min: 0 })
-  credits?: number;
-
-  // Système de grades initiatiques
-  @Prop({ type: String, enum: UserGrade, default: UserGrade.NEOPHYTE })
-  grade?: UserGrade;
+  credits?: number; 
 
   @Prop({ default: 0 })
   consultationsCompleted?: number; // Nombre de consultations effectuées (pas seulement achetées)

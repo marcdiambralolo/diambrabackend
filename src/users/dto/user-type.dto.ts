@@ -8,7 +8,7 @@ export class UpdateUserTypeDto {
     description: 'Type de profil utilisateur',
   })
   @IsEnum(UserType)
-  userType: UserType;
+  userType!: UserType;
 
   @ApiProperty({
     description: 'ID de la rubrique autorisée (uniquement pour Premium)',
@@ -37,7 +37,7 @@ export class UpdateUserTypeDto {
 
 export class UserTypeResponseDto {
   @ApiProperty()
-  userType: UserType;
+  userType!: UserType;
 
   @ApiProperty({ required: false })
   premiumRubriqueId?: string;

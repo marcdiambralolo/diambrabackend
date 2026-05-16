@@ -1,31 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { UserConsultationChoice, UserConsultationChoiceDocument } from '../consultations/schemas/user-consultation-choice.schema';
-import { ReorderChoicesDto } from './dto/reorder-choices.dto';
 import { RubriqueDto } from './dto/rubrique.dto';
 import { ConsultationChoice, Rubrique, RubriqueDocument } from './rubrique.schema';
  
-type UpdatedChoiceResponse = {
-  _id: string;
-  title?: string;
-  description?: string;
-  frequence?: string;
-  participants?: string;
-  offering?: unknown;
-  order?: number;
-  prompt: string;
-  promptId?: string | null;
-  rubriqueId: string;
-  rubriqueTitle: string;
-  pdfFile?: string;
-};
-
 @Injectable()
 export class RubriqueService {
   constructor(
     @InjectModel(Rubrique.name) private rubriqueModel: Model<RubriqueDocument>,
-    @InjectModel(UserConsultationChoice.name) private userConsultationChoiceModel: Model<UserConsultationChoiceDocument>,
   ) { }
 
   /**
@@ -35,26 +17,7 @@ export class RubriqueService {
     try {
       console.log('addConsultationChoice called with:', { rubriqueId, dto });
       const rubrique = await this.rubriqueModel.findById(rubriqueId);
-      if (!rubrique) throw new NotFoundException('Rubrique non trouvée');
-
-      // Nettoyage et validation stricte du choix
-      let gradeId: any = dto.gradeId;
-      if (gradeId) {
-        if (typeof gradeId === 'string') {
-          if (Types.ObjectId.isValid(gradeId)) {
-            gradeId = new Types.ObjectId(gradeId);
-          } else {
-            throw new Error("gradeId fourni n'est pas un ObjectId valide");
-          }
-        } else if (!(gradeId instanceof Types.ObjectId)) {
-          throw new Error('gradeId doit être un ObjectId ou une string ObjectId');
-        }
-      } else {
-        gradeId = undefined;
-      }
-      const freqEnum = ['UNE_FOIS_VIE', 'ANNUELLE', 'MENSUELLE', 'QUOTIDIENNE', 'LIBRE'];
-      const partEnum = ['SOLO', 'AVEC_TIERS', 'GROUPE', 'POUR_TIERS'];
-      const requiredCats = ['animal', 'vegetal', 'beverage'];
+      if (!rubrique) throw new NotFoundException('Rubrique non trouvée');    
 
       // Normalisation de l'objet offering
       const offering = Array.isArray(dto.offering)
@@ -68,38 +31,23 @@ export class RubriqueService {
         const { category, offeringId, quantity } = alt;
         return { category, offeringId, quantity };
       });
-      const catsSet = new Set(alternatives.map((a: { category: string }) => a.category));
-      if (alternatives.length !== 3 || requiredCats.some(cat => !catsSet.has(cat))) {
-        throw new Error('Chaque choix doit avoir 3 alternatives différentes : animal, vegetal, beverage');
-      }
+      
 
       // Validation des champs requis
-      if (!dto.title || !dto.description || !gradeId || !dto.frequence || !dto.participants) {
+      if (!dto.title || !dto.description  ) {
         throw new Error('Champs requis manquants (title, description, gradeId, frequence, participants)');
       }
-      if (!freqEnum.includes(dto.frequence)) {
-        throw new Error('Valeur de frequence invalide');
-      }
-      if (!partEnum.includes(dto.participants)) {
-        throw new Error('Valeur de participants invalide');
-      }
+      
 
       // Construction du choix nettoyé
       const cleanedChoice = {
         prompt: dto.prompt,
         title: dto.title,
-        description: dto.description,
-        frequence: dto.frequence,
-        participants: dto.participants,
-        order: 0,
+        description: dto.description,       
         offering: { alternatives },
-        pdfFile: typeof dto.pdfFile === 'string' ? dto.pdfFile : undefined,
-        gradeId,
+         
       };
-
-      // DEBUG LOGS
-      console.log('DEBUG gradeId:', gradeId, typeof gradeId, gradeId instanceof Types.ObjectId);
-      console.log('DEBUG cleanedChoice:', cleanedChoice);
+ 
 
       // Création explicite du sous-document ConsultationChoice via le modèle Mongoose
       await this.rubriqueModel.updateOne(
@@ -135,8 +83,7 @@ export class RubriqueService {
   async create(dto: RubriqueDto) {
     dto.consultationChoices = dto.consultationChoices.map((choice) => {
       // Nettoyage gradeId
-      const gradeId = (typeof choice.gradeId === 'string' && choice.gradeId.trim() === '') ? undefined : choice.gradeId;
-
+ 
       // Normalisation de l'objet offering
       const offering = Array.isArray(choice.offering)
         ? { alternatives: choice.offering }
@@ -153,47 +100,21 @@ export class RubriqueService {
       if (alternatives.length !== 3 || requiredCats.some(cat => !catsSet.has(cat))) {
         throw new Error('Chaque choix doit avoir 3 alternatives différentes : animal, vegetal, beverage');
       }
-
-      // Validation frequence (respecte le type ConsultationChoiceDto)
-      const freqEnum = ['UNE_FOIS_VIE', 'ANNUELLE', 'MENSUELLE', 'QUOTIDIENNE', 'LIBRE'];
-      const frequence: 'UNE_FOIS_VIE' | 'ANNUELLE' | 'MENSUELLE' | 'QUOTIDIENNE' | 'LIBRE' = freqEnum.includes(choice.frequence as string)
-        ? (choice.frequence as 'UNE_FOIS_VIE' | 'ANNUELLE' | 'MENSUELLE' | 'QUOTIDIENNE' | 'LIBRE')
-        : 'LIBRE';
-
-      // Validation participants
-      const partEnum = ['SOLO', 'AVEC_TIERS', 'GROUPE', 'POUR_TIERS'];
-      const participants: 'SOLO' | 'AVEC_TIERS' | 'GROUPE' | 'POUR_TIERS' | undefined =
-        choice.participants && partEnum.includes(choice.participants)
-          ? choice.participants as 'SOLO' | 'AVEC_TIERS' | 'GROUPE' | 'POUR_TIERS'
-          : undefined;
-
-      // Construction du choix nettoyé
       return {
-        prompt: choice.prompt,
         title: choice.title,
         description: choice.description,
-        frequence,
-        participants,
-        order: choice.order,
         offering: { alternatives },
-        pdfFile: typeof choice.pdfFile === 'string' ? choice.pdfFile : undefined,
-        gradeId,
-      };
+       };
     });
     return this.rubriqueModel.create(dto);
   }
 
   cleanConsultationChoices(choices: any[]): ConsultationChoice[] {
     return choices.map(choice => {
-      const gradeId = (typeof choice.gradeId === 'string' && choice.gradeId.trim() === '') ? undefined : choice.gradeId;
-      return {
+       return {
         _id: choice._id,
-        prompt: choice.prompt,
         title: choice.title,
         description: choice.description,
-        order: choice.order,
-        frequence: choice.frequence,
-        participants: choice.participants,
         offering: {
           alternatives: (choice.offering?.alternatives || []).map((alt: any) => ({
             _id: alt._id,
@@ -201,9 +122,7 @@ export class RubriqueService {
             offeringId: alt.offeringId,
             quantity: alt.quantity,
           })),
-        },
-        pdfFile: typeof choice.pdfFile === 'string' ? choice.pdfFile : undefined,
-        gradeId,
+        }, 
       };
     });
   }
@@ -263,22 +182,6 @@ export class RubriqueService {
 
     return alternativesWithName;
   }
-
-  async reorderChoices(id: string, dto: ReorderChoicesDto) {
-    const rubrique = await this.rubriqueModel.findById(id).exec();
-    if (!rubrique) throw new NotFoundException('Rubrique non trouvée');
-    const orderMap = new Map(dto.choices.map(c => [c.choiceId, c.order]));
-    rubrique.consultationChoices.forEach(choice => {
-      const newOrder = orderMap.get(choice._id?.toString() ?? '');
-      if (newOrder !== undefined) {
-        choice.order = newOrder;
-      }
-    });
-
-    rubrique.consultationChoices.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-    return await rubrique.save();
-  }
  
   // Helper: transforme une valeur (ObjectId | string | objet populate) en string id
   toIdString(v: unknown): string | null {
@@ -329,68 +232,5 @@ export class RubriqueService {
     const choice = rubrique?.consultationChoices?.find((c: any) => c._id?.toString?.() === choiceId || c._id === choiceId);
     console.log('Updated choice:', choice);
     return choice;
-  }
-
-  async updateChoicePrompt(choiceId: string, promptRaw: string): Promise<UpdatedChoiceResponse> {
-    const prompt = (promptRaw ?? "").trim();
-    if (!prompt) {
-      throw new NotFoundException("Le prompt ne peut pas être vide.");
-    }
-
-    // ✅ CAST ObjectId si possible (évite mismatch string/ObjectId)
-    const choiceObjectId = Types.ObjectId.isValid(choiceId)
-      ? new Types.ObjectId(choiceId)
-      : choiceId;
-
-    const updatedRubrique = await this.rubriqueModel
-      .findOneAndUpdate(
-        { "consultationChoices._id": choiceObjectId },
-        {
-          $set: { "consultationChoices.$.prompt": prompt },
-          $currentDate: { updatedAt: true }, // bump updatedAt (timestamps)
-        },
-        {
-          new: true,
-          projection: { titre: 1, consultationChoices: 1 },
-          runValidators: true,
-        },
-      )
-      .lean()
-      .exec();
-
-    if (!updatedRubrique) {
-      throw new NotFoundException(
-        `Aucun choix de consultation avec l'ID ${choiceId} trouvé.`,
-      );
-    }
-
-    const rubriqueId = this.toIdString((updatedRubrique as any)._id) ?? "";
-    const rubriqueTitle = ((updatedRubrique as any).titre as string) ?? "";
-
-    const choice = ((updatedRubrique as any).consultationChoices ?? []).find((c: any) => {
-      const cId = this.toIdString(c?._id);
-      return cId === choiceId;
-    });
-
-    if (!choice) {
-      throw new NotFoundException(
-        `Choix ${choiceId} non retrouvé après mise à jour (incohérence).`,
-      );
-    }
-
-    return {
-      _id: this.toIdString(choice._id) ?? choiceId,
-      title: choice.title,
-      description: choice.description,
-      frequence: choice.frequence,
-      participants: choice.participants,
-      offering: choice.offering,
-      order: choice.order,
-      prompt: choice.prompt ?? prompt,
-      promptId: this.toIdString(choice.promptId),
-      rubriqueId,
-      rubriqueTitle,
-      pdfFile: typeof (choice as any)?.pdfFile === 'string' ? (choice as any).pdfFile : undefined,
-    };
   }
 }

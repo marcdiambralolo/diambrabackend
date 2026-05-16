@@ -55,9 +55,7 @@ async function bootstrap() {
     allowedOrigins.push(...fromEnv);
   }
 
-
   allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');
-
 
   app.enableCors({
     origin: allowedOrigins,

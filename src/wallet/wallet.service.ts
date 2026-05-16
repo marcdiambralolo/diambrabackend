@@ -1,8 +1,3 @@
-    /**
-     * Recherche une transaction par _id Mongo OU transactionId pour un utilisateur donné
-     */
-  
-
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -21,15 +16,14 @@ export class WalletService {
     private offeringsService: OfferingsService,
     @Inject(forwardRef(() => OfferingStockService))
     private offeringStockService: OfferingStockService,
-  ) {}
+  ) { }
 
   async createTransaction(dto: CreateWalletTransactionDto, userId: string): Promise<WalletTransaction> {
-    // Validation d’intégrité : vérifier que chaque offeringId existe
     const offeringIds = dto.items.map(item => item.offeringId);
 
     const found = await this.offeringsService['offeringModel']
       .find({ _id: { $in: offeringIds } })
-      .select('_id name category price')
+      .select('_id name price')
       .lean();
 
     const foundIds = found.map((o: any) => o._id.toString());
@@ -67,16 +61,13 @@ export class WalletService {
         offeringId: item.offeringId,
         quantity,
         name: offering?.name ?? item.name,
-        // icon supprimé
-        category: offering?.category ?? item.category,
         unitPrice,
         totalPrice: unitPrice * quantity,
       };
     });
 
     const totalAmount = normalizedItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    
-    // Générer les champs manquants avec des valeurs par défaut
+
     const payload = {
       ...dto,
       items: normalizedItems,
@@ -101,7 +92,6 @@ export class WalletService {
           new Types.ObjectId(item.offeringId),
           offering.name,
           item.quantity,
-          offering.category
         );
       }
       return saved;
@@ -111,19 +101,18 @@ export class WalletService {
     }
   }
 
-    async findTransactionByIdOrTransactionId(id: string, userId: string): Promise<WalletTransaction | null> {
-      // Recherche par _id Mongo OU transactionId, mais _id doit être un ObjectId valide
-      const or: any[] = [];
-      if (Types.ObjectId.isValid(id)) {
-        or.push({ _id: id });
-      }
-      or.push({ transactionId: id });
-      const tx = await this.walletTransactionModel.findOne({
-        userId,
-        $or: or,
-      }).exec();
-      return tx;
+  async findTransactionByIdOrTransactionId(id: string, userId: string): Promise<WalletTransaction | null> {
+    const or: any[] = [];
+    if (Types.ObjectId.isValid(id)) {
+      or.push({ _id: id });
     }
+    or.push({ transactionId: id });
+    const tx = await this.walletTransactionModel.findOne({
+      userId,
+      $or: or,
+    }).exec();
+    return tx;
+  }
 
   async getTransactionsByUser(userId: string): Promise<WalletTransaction[]> {
     // Populate items.offeringId with offering details
@@ -133,7 +122,7 @@ export class WalletService {
       .populate({
         path: 'items.offeringId',
         model: 'Offering',
-        select: 'name category price illustrationUrl',
+        select: 'name price',
       })
       .exec();
   }

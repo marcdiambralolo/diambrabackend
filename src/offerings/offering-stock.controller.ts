@@ -22,14 +22,12 @@ export class OfferingStockController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
   async increment(
-    @Body() body: { offeringId: string; name: string; quantity: number; category?: string }
+    @Body() body: { offeringId: string; name: string; quantity: number;}
   ) {
     return this.offeringStockService.incrementStock(
       new Types.ObjectId(body.offeringId),
       body.name,
       body.quantity,
-      // icon supprimé,
-      body.category
     );
   }
 

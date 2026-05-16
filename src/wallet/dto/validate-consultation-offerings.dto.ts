@@ -6,5 +6,5 @@ export class ValidateConsultationOfferingsDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ConsumeOfferingDto)
-  offerings: ConsumeOfferingDto[];
+  offerings!: ConsumeOfferingDto[];
 }

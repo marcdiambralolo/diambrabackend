@@ -3,7 +3,6 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { ReorderChoicesDto } from './dto/reorder-choices.dto';
 import { RubriqueDto } from './dto/rubrique.dto';
 import { RubriqueService } from './rubrique.service';
 
@@ -37,10 +36,10 @@ export class RubriqueController {
     return this.rubriqueService.create(dto);
   }
 
-    /**
-   * PATCH /rubriques/:rubriqueId/consultation-choices/:choiceId
-   * Met à jour un choix de consultation (gradeId, etc)
-   */
+  /**
+ * PATCH /rubriques/:rubriqueId/consultation-choices/:choiceId
+ * Met à jour un choix de consultation (gradeId, etc)
+ */
   @Patch(':rubriqueId/consultation-choices/:choiceId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
@@ -69,7 +68,7 @@ export class RubriqueController {
   findOne(@Param('id') id: string) {
     return this.rubriqueService.findOne(id);
   }
- 
+
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
@@ -77,12 +76,6 @@ export class RubriqueController {
     return this.rubriqueService.update(id, dto);
   }
 
-  @Put(':id/reorder-choices')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  reorderChoices(@Param('id') id: string, @Body() dto: ReorderChoicesDto) {
-    return this.rubriqueService.reorderChoices(id, dto);
-  }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

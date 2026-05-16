@@ -10,13 +10,13 @@ export class OfferingStockService {
     private offeringStockModel: Model<OfferingStockDocument>,
   ) {}
 
-  async incrementStock(offeringId: Types.ObjectId, name: string, quantity: number, category?: string): Promise<OfferingStock> {
+  async incrementStock(offeringId: Types.ObjectId, name: string, quantity: number): Promise<OfferingStock> {
     if (quantity <= 0) throw new BadRequestException('Quantité à ajouter invalide');
     return this.offeringStockModel.findOneAndUpdate(
       { offeringId },
       {
         $inc: { quantity },
-        $setOnInsert: { name, category },
+        $setOnInsert: { name },
       },
       { new: true, upsert: true }
     );

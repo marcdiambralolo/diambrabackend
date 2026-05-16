@@ -7,16 +7,11 @@ import { Consultation, ConsultationDocument } from '../consultations/schemas/con
 import { OfferingsService } from '../offerings/offerings.service';
 import { ConsultationStatus } from '../common/enums/consultation-status.enum';
 
-interface OfferingItem {
-  offeringId: string | Types.ObjectId | any;
-  quantity: number;
-}
 
 export interface UserOffering {
   offeringId: string;
   quantity: number;
   offering?: any;
-  illustrationUrl?: string;
 }
 
 interface OfferingStats {
@@ -51,7 +46,7 @@ export class WalletOfferingsService {
     private consultationModel: Model<ConsultationDocument>,
     @Inject(forwardRef(() => OfferingsService))
     private offeringsService: OfferingsService,
-  ) {}
+  ) { }
 
   /**
    * Retourne les offrandes agrégées du wallet de l'utilisateur
@@ -71,7 +66,7 @@ export class WalletOfferingsService {
       .populate({
         path: 'items.offeringId',
         model: 'Offering',
-        select: 'name category price description isActive illustrationUrl',
+        select: 'name  price description isActive ',
       })
       .sort({ createdAt: -1 })
       .exec();
@@ -93,7 +88,7 @@ export class WalletOfferingsService {
 
         // Normaliser l'ID de l'offrande
         const offeringId = this.normalizeOfferingId(item.offeringId);
-        
+
         if (!offeringId) {
           return;
         }
@@ -299,7 +294,7 @@ export class WalletOfferingsService {
       if (userOffering.quantity < requestedItem.quantity) {
         throw new BadRequestException(
           `Quantité insuffisante pour l'offrande ${requestedItem.offeringId}. ` +
-            `Possédé: ${userOffering.quantity}, Demandé: ${requestedItem.quantity}`,
+          `Possédé: ${userOffering.quantity}, Demandé: ${requestedItem.quantity}`,
         );
       }
 
@@ -337,7 +332,7 @@ export class WalletOfferingsService {
     const offeringIds = consumedItems.map(item => item.offeringId);
     const offeringsData = await this.offeringsService['offeringModel']
       .find({ _id: { $in: offeringIds } })
-      .select('_id name category price')
+      .select('_id name  price')
       .lean();
 
     const offeringMap = new Map(
@@ -356,8 +351,6 @@ export class WalletOfferingsService {
         offeringId: item.offeringId.toString(),
         quantity: item.quantity,
         name: offering.name,
-        // icon supprimé, illustrationUrl utilisé directement si besoin
-        category: offering.category,
         unitPrice,
         totalPrice: unitPrice * item.quantity,
       };
@@ -407,7 +400,7 @@ export class WalletOfferingsService {
       };
     } catch (error) {
       throw new BadRequestException(
-        `Erreur lors de la consommation des offrandes: ${error.message}`,
+        `Erreur lors de la consommation des offrandes: ${error instanceof Error ? error.message : "error.message"}`,
       );
     }
   }
@@ -420,11 +413,11 @@ export class WalletOfferingsService {
     try {
       const stats = await this.walletTransactionModel.aggregate([
         // Filtrer uniquement les transactions d'achat complétées
-        { 
-          $match: { 
+        {
+          $match: {
             status: 'completed',
             type: { $in: ['purchase', 'refund'] } // Inclure les remboursements
-          } 
+          }
         },
         // Déplier les items
         { $unwind: '$items' },
@@ -481,7 +474,7 @@ export class WalletOfferingsService {
 
       return stats;
     } catch (error) {
-      throw new BadRequestException(`Erreur lors de la récupération des statistiques: ${error.message}`);
+      throw new BadRequestException(`Erreur lors de la récupération des statistiques: ${error instanceof Error ? error.message : "error.message"}`);
     }
   }
 
@@ -504,7 +497,7 @@ export class WalletOfferingsService {
       .populate({
         path: 'items.offeringId',
         model: 'Offering',
-        select: 'name category',
+        select: 'name',
       })
       .exec();
 
@@ -550,7 +543,6 @@ export class WalletOfferingsService {
         price: offeringData.price,
         description: offeringData.description,
         isActive: offeringData.isActive !== false,
-        illustrationUrl: offeringData.illustrationUrl,
       };
     }
 

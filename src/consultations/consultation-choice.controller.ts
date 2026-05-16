@@ -40,6 +40,5 @@ export class ConsultationChoiceController {
   async getChoiceById(@Param('id') id: string) {
     const result = await this.consultationChoiceService.findById(id);
     return result;
-  }
- 
+  } 
 }

@@ -1,9 +1,8 @@
 ﻿/* eslint-disable */
-import { Offering } from '@/offerings/schemas/offering.schema';
+import { ConsultationStatus } from '@/common/enums/consultation-status.enum';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-import { ConsultationStatus, ConsultationType } from '../../common/enums/consultation-status.enum';
-
+ 
 @Schema({ _id: false })
 export class ConsultationChoice {
   @Prop({ type: Object, required: true })
@@ -107,9 +106,6 @@ export class Consultation {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Service' })
   serviceId!: MongooseSchema.Types.ObjectId;
 
-  @Prop({ type: String, enum: ConsultationType })
-  type!: ConsultationType;
-
   @Prop({ type: String, enum: ConsultationStatus, default: ConsultationStatus.PENDING })
   status!: string;
 
@@ -171,8 +167,6 @@ export class Consultation {
 }
 
 export const ConsultationSchema = SchemaFactory.createForClass(Consultation);
-
- 
 
 // Indexes
 ConsultationSchema.index({ clientId: 1, createdAt: -1 });

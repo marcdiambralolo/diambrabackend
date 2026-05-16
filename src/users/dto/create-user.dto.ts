@@ -1,12 +1,11 @@
 
-import { IsString, IsEmail, IsOptional, IsNumber, Min, MaxLength, IsArray, IsBoolean, IsUrl, MinLength } from 'class-validator';
-import { Role } from '../../common/enums/role.enum';
+import { IsArray, IsBoolean, IsEmail, IsNumber, IsOptional, IsString, IsUrl, MaxLength, Min, MinLength } from 'class-validator';
 import { Permission } from '../../common/enums/permission.enum';
 
 export class CreateUserDto {
     @IsString()
     @MaxLength(30)
-    username: string;
+    username!: string;
 
     @IsString()
     @IsOptional()
@@ -99,7 +98,7 @@ export class CreateUserDto {
 
     @IsString()
     @MinLength(8, { message: 'Password must be at least 8 characters long' })
-    password: string;
+    password!: string;
 
     @IsOptional()
     @IsBoolean()

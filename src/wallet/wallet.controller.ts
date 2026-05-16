@@ -28,7 +28,6 @@ export class WalletController {
     return { transaction };
   }
 
-
   @Get('transactions/:id')
   async findOne(@Param('id') id: string, @CurrentUser() user: UserDocument) {
     // Recherche par _id Mongo OU transactionId

@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { ConsultationType } from '../common/enums/consultation-status.enum';
 
 export type RubriqueDocument = Rubrique & Document;
 
@@ -63,9 +62,6 @@ export class OfferingAlternative {
   @Prop({ type: String, required: false })
   totalUnitTotal?: string;
 
-  @Prop({ type: String, required: false })
-   illustrationUrl?: string;
-
 }
 
 export const OfferingAlternativeSchema = SchemaFactory.createForClass(OfferingAlternative);
@@ -89,25 +85,6 @@ export class ConsultationChoice {
   @Prop({ required: true })
   description!: string;
 
-  @Prop({ required: false })
-  prompt?: string;
-
-  /**
-   * Chemin du fichier PDF associé (optionnel)
-   */
-  @Prop({ required: false })
-  pdfFile?: string;
-
-  @Prop({ type: Number, default: 0 })
-  order!: number;
-
-  /**
-   * Identifiant du grade auquel appartient ce choix
-   */
-  @Prop({ type: 'ObjectId', ref: 'GradeConfig', required: true })
-  gradeId!: string;
-  
-
   @Prop({ type: OfferingSchema, required: true })
   offering!: Offering;
 }
@@ -123,10 +100,7 @@ export class Rubrique {
   titre!: string;
 
   @Prop({ required: true })
-  description!: string;
-
-  @Prop({ type: String, enum: ConsultationType, default: ConsultationType.AUTRE })
-  typeconsultation!: ConsultationType;
+  description!: string; 
 
   @Prop({ type: [ConsultationChoiceSchema], default: [] })
   consultationChoices!: ConsultationChoice[];

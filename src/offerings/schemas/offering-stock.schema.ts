@@ -12,11 +12,9 @@ export class OfferingStock {
   name!: string;
 
   @Prop({ required: true })
-  quantity!: number; 
-  
-  @Prop()
-  category?: string;
-    remainingQuantity: any;
+  quantity!: number;
+
+  remainingQuantity: any;
 }
 
 export const OfferingStockSchema = SchemaFactory.createForClass(OfferingStock);
