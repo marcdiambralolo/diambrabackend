@@ -10,11 +10,7 @@ export class OfferingItemDto {
 
   @IsString()
   @IsOptional()
-  name?: string;
-
-  @IsString()
-  @IsOptional()
-  category?: string;
+  name?: string; 
 
   @IsNumber()
   @IsOptional()
