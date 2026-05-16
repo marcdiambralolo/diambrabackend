@@ -10,9 +10,7 @@ import { AnalysisGateway } from './analysis.gateway';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { CategoriesModule } from './categories/categories.module';
 import { SiteMetricsModule } from './common/site-metrics.module';
-import { ConfigModule as CustomConfigModule } from './config/config.module';
 import { ConsultationsModule } from './consultations/consultations.module';
 import { DoorsJobController } from './doors-job/doors-job.controller';
 import { DoorsJobModule } from './doors-job/doors-job.module';
@@ -85,8 +83,6 @@ import { WalletModule } from './wallet/wallet.module';
     OfferingsModule,
     OfferingStockModule,
     RubriqueModule,
-    CategoriesModule,
-    CustomConfigModule,
     UploadModule, 
     RedisModule,
     MessagingModule,

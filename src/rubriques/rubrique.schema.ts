@@ -9,14 +9,11 @@ export class OfferingAlternative {
   @Prop({ type: 'ObjectId', auto: true })
   _id?: string;
 
-  @Prop({ type: String, enum: ['animal', 'vegetal', 'beverage'], required: true })
-  category: 'animal' | 'vegetal' | 'beverage';
-
   @Prop({ type: String, required: true })
-  offeringId: string;
+  offeringId!: string;
 
   @Prop({ type: Number, required: true, default: 1 })
-  quantity: number;
+  quantity!: number;
 
   @Prop({ type: String, required: false })
   name?: string;
@@ -76,7 +73,7 @@ export const OfferingAlternativeSchema = SchemaFactory.createForClass(OfferingAl
 @Schema({ _id: false })
 export class Offering {
   @Prop({ type: [OfferingAlternativeSchema], required: true, default: [] })
-  alternatives: OfferingAlternative[];
+  alternatives!: OfferingAlternative[];
 }
 
 export const OfferingSchema = SchemaFactory.createForClass(Offering);
@@ -87,10 +84,10 @@ export class ConsultationChoice {
   _id?: string;
 
   @Prop({ required: true })
-  title: string;
+  title!: string;
 
   @Prop({ required: true })
-  description: string;
+  description!: string;
 
   @Prop({ required: false })
   prompt?: string;
@@ -102,55 +99,37 @@ export class ConsultationChoice {
   pdfFile?: string;
 
   @Prop({ type: Number, default: 0 })
-  order: number;
+  order!: number;
 
   /**
    * Identifiant du grade auquel appartient ce choix
    */
   @Prop({ type: 'ObjectId', ref: 'GradeConfig', required: true })
   gradeId!: string;
-
-  @Prop({
-    type: String,
-    enum: ['UNE_FOIS_VIE', 'ANNUELLE', 'MENSUELLE', 'QUOTIDIENNE', 'LIBRE'],
-    default: 'LIBRE',
-    required: true,
-  })
-  frequence: string;
-
-  @Prop({
-    type: String,
-    enum: ['SOLO', 'AVEC_TIERS', 'GROUPE', 'POUR_TIERS'],
-    default: 'SOLO',
-    required: true,
-  })
-  participants: string;
+  
 
   @Prop({ type: OfferingSchema, required: true })
-  offering: Offering;
+  offering!: Offering;
 }
 
 export const ConsultationChoiceSchema = SchemaFactory.createForClass(ConsultationChoice);
 
 @Schema({ timestamps: true })
 export class Rubrique {
-  @Prop({ required: true, default: 'GENERAL' })
-  categorie: string;
-
   @Prop({ type: 'ObjectId', ref: 'Categorie', required: false })
   categorieId?: string;
 
   @Prop({ required: true })
-  titre: string;
+  titre!: string;
 
   @Prop({ required: true })
-  description: string;
+  description!: string;
 
   @Prop({ type: String, enum: ConsultationType, default: ConsultationType.AUTRE })
-  typeconsultation: ConsultationType;
+  typeconsultation!: ConsultationType;
 
   @Prop({ type: [ConsultationChoiceSchema], default: [] })
-  consultationChoices: ConsultationChoice[];
+  consultationChoices!: ConsultationChoice[];
 }
 
 export const RubriqueSchema = SchemaFactory.createForClass(Rubrique);

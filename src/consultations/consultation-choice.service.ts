@@ -21,20 +21,15 @@ export class ConsultationChoiceService {
       throw new NotFoundException(`Choix de consultation avec l'ID ${id} introuvable`);
     }
 
-    const prompt = null;
+ 
 
     return {
       _id: choice._id,
       title: choice.title,
       description: choice.description,
-      frequence: choice.frequence,
-      participants: choice.participants,
       offering: (choice as any)?.offering ?? null,
-      order: (choice as any)?.order ?? null,
       rubriqueId: (choice as any)?.rubriqueId ?? null,
       rubriqueTitle: (choice as any)?.rubriqueTitle ?? null,
-      prompt: prompt,
-      pdfFile: (choice as any)?.pdfFile ?? null,
     };
   }
 
@@ -103,8 +98,6 @@ export class ConsultationChoiceService {
               _id: choice._id,
               title: choice.title,
               description: choice.description,
-              frequence: choice.frequence,
-              participants: choice.participants,
               offering: choice.offering,
               order: choice.order,
               rubriqueId: rubrique._id,
@@ -130,8 +123,6 @@ export class ConsultationChoiceService {
             _id: choice._id,
             title: choice.title,
             description: choice.description,
-            frequence: choice.frequence,
-            participants: choice.participants,
             offering: choice.offering,
             order: choice.order,
             rubriqueId: rubrique._id,
@@ -157,8 +148,6 @@ export class ConsultationChoiceService {
               _id: choice._id,
               title: choice.title,
               description: choice.description,
-              frequence: choice.frequence,
-              participants: choice.participants,
               offering: choice.offering,
               order: choice.order,
               rubriqueId: rubrique._id,

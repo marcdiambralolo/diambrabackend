@@ -57,26 +57,15 @@ export class DoorsJobProcessor extends WorkerHost {
         gender: formData.gender,
         country: formData.country || formData.paysNaissance || 'Côte d’Ivoire',
       });
-      skyChart = await this.deepseekService.generateSkyChart({
-        nom: formData.nom,
-        prenoms: formData.prenoms,
-        dateNaissance: formData.dateNaissance,
-        heureNaissance: formData.heureNaissance,
-        villeNaissance: formData.villeNaissance,
-        paysNaissance: formData.paysNaissance || formData.country || 'Côte d’Ivoire',
-        gender: formData.gender,
-        country: formData.country || formData.paysNaissance || 'Côte d’Ivoire',
-      });
+     
       job.updateProgress(50);
-      console.log('[DoorsJobProcessor] [STEP 2] Sky chart généré:', skyChart);
     } catch (err) {
       this.logger.error('[STEP 2] Erreur generateSkyChart:', err);
       console.error('[DoorsJobProcessor] [STEP 2] Erreur generateSkyChart:', err, { userId, formData });
       throw new Error('[STEP 2] Erreur generateSkyChart: ' + (typeof err === 'object' && err && 'message' in err ? (err as any).message : String(err)));
     }
 
-    // 3. Générer les consultations pour la rubrique (ID hardcodé comme dans le front)
-    let results = [];
+ 
     try {
       const rubriqueId = '694acf59bd12675f59e7a7f2';
       console.log('[DoorsJobProcessor] [STEP 3] Suppression anciennes consultations pour', { userId, rubriqueId });
@@ -85,7 +74,7 @@ export class DoorsJobProcessor extends WorkerHost {
       const rubrique = await this.rubriqueService.findOne(rubriqueId);
       console.log('[DoorsJobProcessor] [STEP 3] Rubrique trouvée:', rubrique);
       const choixConsultations = rubrique.consultationChoices;
-      results = [];
+ 
       for (const choix of choixConsultations) {
         console.log('[DoorsJobProcessor] [STEP 3] Génération consultation pour choix:', choix);
         const choiceDto = {
@@ -93,9 +82,7 @@ export class DoorsJobProcessor extends WorkerHost {
           prompt: choix.prompt,
           title: choix.title,
           description: choix.description,
-          order: choix.order,
-          frequence: choix.frequence,
-          participants: choix.participants,
+          order: choix.order, 
           offering: {
             alternatives: (choix.offering?.alternatives || []).map((alt: any) => ({
               _id: alt._id ?? '',
@@ -129,19 +116,10 @@ export class DoorsJobProcessor extends WorkerHost {
           visible: false,
         };
         console.log('[DoorsJobProcessor] [STEP 3] ledto pour création consultation:', ledto);
-        try {
-          const consultation = await this.consultationsService.create(userId, ledto);
-          console.log('[DoorsJobProcessor] [STEP 3] Consultation créée:', consultation);
-          results.push({ consultation: this.consultationsService.serializeConsultationForFrontend(consultation) });
-        } catch (err) {
-          this.logger.error('[STEP 3] Erreur création consultation:', err);
-          console.error('[DoorsJobProcessor] [STEP 3] Erreur création consultation:', err, { userId, ledto });
-          throw new Error('[STEP 3] Erreur création consultation: ' + (typeof err === 'object' && err && 'message' in err ? (err as any).message : String(err)));
-        }
+        
       }
       job.updateProgress(100);
-      console.log('[DoorsJobProcessor] [STEP 3] Toutes consultations générées, résultat final:', results);
-      return { success: true, consultations: results };
+       return { success: true, consultations: [] };
     } catch (err) {
       this.logger.error('[STEP 3] Erreur globale génération consultations:', err);
       console.error('[DoorsJobProcessor] [STEP 3] Erreur globale génération consultations:', err, { userId, formData });

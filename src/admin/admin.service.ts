@@ -544,11 +544,9 @@ export class AdminService {
 
   async getAnalysisJobsStatuses(consultationIds: string[]) {
     const uniqueIds = Array.from(new Set(consultationIds.filter(Boolean)));
-    const items = await this.analysisQueueService.getAnalysisJobStatuses(uniqueIds);
 
     return {
       total: uniqueIds.length,
-      items,
     };
   }
 

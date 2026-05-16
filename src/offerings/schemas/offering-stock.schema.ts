@@ -12,11 +12,8 @@ export class OfferingStock {
   name!: string;
 
   @Prop({ required: true })
-  quantity!: number;
-
-  @Prop()
-  // icon supprimé
-
+  quantity!: number; 
+  
   @Prop()
   category?: string;
     remainingQuantity: any;

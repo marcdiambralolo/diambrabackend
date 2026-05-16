@@ -1,15 +1,11 @@
-import { Analysis } from '@/consultations/schemas/analysis.schema';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Consultation, ConsultationDocument } from '../consultations/schemas/consultation.schema';
 import { UserConsultationChoice, UserConsultationChoiceDocument } from '../consultations/schemas/user-consultation-choice.schema';
 import { ReorderChoicesDto } from './dto/reorder-choices.dto';
-import { ConsultationChoiceWithCountDto, RubriqueWithChoiceCountDto } from './dto/rubrique-with-count.dto';
 import { RubriqueDto } from './dto/rubrique.dto';
 import { ConsultationChoice, Rubrique, RubriqueDocument } from './rubrique.schema';
-import { RubriqueBoutonService } from './rubriquebouton.service';
-
+ 
 type UpdatedChoiceResponse = {
   _id: string;
   title?: string;
@@ -30,9 +26,6 @@ export class RubriqueService {
   constructor(
     @InjectModel(Rubrique.name) private rubriqueModel: Model<RubriqueDocument>,
     @InjectModel(UserConsultationChoice.name) private userConsultationChoiceModel: Model<UserConsultationChoiceDocument>,
-    @InjectModel(Consultation.name) private consultationModel: Model<ConsultationDocument>,
-    @InjectModel(Analysis.name) private analysisModel: Model<Analysis>,
-    private readonly rubriqueBoutonService: RubriqueBoutonService,
   ) { }
 
   /**
@@ -124,13 +117,7 @@ export class RubriqueService {
     }
   }
 
-
-  async getChoicesWithConsultationCount(
-    rubriqueId: string,
-    userId: string,
-  ): Promise<RubriqueWithChoiceCountDto> {
-    return this.rubriqueBoutonService.getChoicesWithConsultationCount(rubriqueId, userId);
-  }
+ 
 
   async findAll() {
     return this.rubriqueModel.find().populate('categorieId').lean().exec();
@@ -292,81 +279,7 @@ export class RubriqueService {
 
     return await rubrique.save();
   }
-
-  async getChoicesWithConsultationCount2(rubriqueId: string, userId: string): Promise<RubriqueWithChoiceCountDto> {
-    const rubrique = await this.rubriqueModel.findById(rubriqueId).populate('categorieId').exec();
-    if (!rubrique) throw new NotFoundException('Rubrique non trouvée');
-
-    // Sécurise la liste des choix
-    const consultationChoices = Array.isArray(rubrique.consultationChoices) ? rubrique.consultationChoices : [];
-    let choicesWithCount: ConsultationChoiceWithCountDto[] = await Promise.all(
-      consultationChoices.map(async (choice) => {
-        // Sécurise les champs essentiels
-        const choiceId = choice._id?.toString?.() || choice._id || null;
-        const order = typeof choice.order === 'number' ? choice.order : 0;
-        const title = choice.title || '';
-        const description = choice.description || '';
-        const frequence = choice.frequence || 'LIBRE';
-        const participants = choice.participants || null;
-        const offering = choice.offering || {};
-
-        // Compte le nombre de consultations pour ce choix
-        const consultationCount = await this.userConsultationChoiceModel.countDocuments({
-          userId,
-          choiceId: choiceId,
-        });
-
-        // Récupère la dernière consultation pour ce choix et cet utilisateur
-        const lastConsultation = await this.userConsultationChoiceModel.findOne({
-          userId,
-          choiceId: choiceId,
-        })
-          .sort({ createdAt: -1 })
-          .populate({ path: 'consultationId', model: 'Consultation' })
-          .exec();
-
-        // Statut du bouton
-        let buttonStatus: 'CONSULTER' | 'RÉPONSE EN ATTENTE' | 'VOIR L\'ANALYSE' = 'CONSULTER';
-        let consultationId: string | null = null;
-
-        if (lastConsultation && lastConsultation.consultationId && typeof lastConsultation.consultationId === 'object') {
-          const c = lastConsultation.consultationId as any;
-          consultationId = lastConsultation._id?.toString?.() || null;
-          if (c.status === 'COMPLETED') {
-            buttonStatus = 'VOIR L\'ANALYSE';
-          } else if (c.status && c.status !== 'COMPLETED') {
-            buttonStatus = !c.analysisNotified ? 'RÉPONSE EN ATTENTE' : 'RÉPONSE EN ATTENTE';
-          }
-        }
-
-        return {
-          _id: choiceId,
-          title,
-          description,
-          frequence,
-          participants,
-          order,
-          offering,
-          consultationCount,
-          showButtons: frequence !== 'UNE_FOIS_VIE',
-          buttonStatus,
-          consultationId,
-        };
-      })
-    );
-
-    // Trie les choix par ordre croissant (robuste)
-    choicesWithCount = choicesWithCount.sort((a, b) => (a.order || 0) - (b.order || 0));
-    return {
-      _id: rubrique._id && typeof rubrique._id !== 'string' && rubrique._id.toString ? rubrique._id.toString() : String(rubrique._id),
-      titre: rubrique.titre || '',
-      description: rubrique.description || '',
-      categorie: rubrique.categorie,
-      typeconsultation: rubrique.typeconsultation,
-      consultationChoices: choicesWithCount,
-    };
-  }
-
+ 
   // Helper: transforme une valeur (ObjectId | string | objet populate) en string id
   toIdString(v: unknown): string | null {
     if (!v) return null;

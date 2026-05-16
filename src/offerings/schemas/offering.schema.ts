@@ -18,9 +18,6 @@ export class Offering extends Document {
 
   @Prop({ required: true })
   description!: string;
-
-  @Prop({ required: false })
-  illustrationUrl?: string;
 }
 
 export const OfferingSchema = SchemaFactory.createForClass(Offering);

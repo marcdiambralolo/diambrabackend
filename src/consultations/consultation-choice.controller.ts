@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
@@ -6,31 +6,7 @@ import { ConsultationChoiceService } from './consultation-choice.service';
 
 @ApiTags('Consultation Choices')
 @Controller('consultation-choices')
-export class ConsultationChoiceController {
-
-  @Get('without-prompts')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiOperation({ summary: 'Récupérer les choix de consultation sans prompt' })
-  @ApiResponse({ status: 200, description: 'Liste des choix sans prompt retournée.' })
-  async getChoicesWithoutPrompts() {
-    return this.consultationChoiceService.findAllWithoutPrompts();
-  }
-
-  @Get('allprompts')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiOperation({ summary: 'Récupérer tous les choix de consultation' })
-  @ApiResponse({ status: 200, description: 'Liste des choix  retournée.' })
-  async getChoicesAllPrompts() {
-    return this.consultationChoiceService.findAllChoices();
-  }
-
-  @Get('with-prompts')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiOperation({ summary: 'Récupérer tous les choix de consultation avec prompts et rubriques' })
-  @ApiResponse({ status: 200, description: 'Liste des choix avec prompts retournée.' })
-  async getAllChoicesWithPrompts() {
-    return this.consultationChoiceService.findAllWithPrompts();
-  }
+export class ConsultationChoiceController {  
 
   @Get('from-rubriques/:id')
   @ApiOperation({ summary: 'Trouver un choix de consultation par id dans toutes les rubriques' })
@@ -65,15 +41,5 @@ export class ConsultationChoiceController {
     const result = await this.consultationChoiceService.findById(id);
     return result;
   }
-
-  @Patch(':id/prompt')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @ApiOperation({ summary: 'Associer un prompt à un choix de consultation' })
-  @ApiResponse({ status: 200, description: 'Prompt associé avec succès.' })
-  async updatePrompt(
-    @Param('id') id: string,
-    @Body() body: { prompt: string | null },
-  ) {
-    return null;
-  }
+ 
 }

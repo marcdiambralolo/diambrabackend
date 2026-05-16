@@ -1,17 +1,15 @@
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 import { QueueEvents, Worker } from 'bullmq';
+import Redis from 'ioredis';
+import 'reflect-metadata';
 import { AppModule } from './app.module';
-import { AnalysisDbService } from './consultations/analysis-db.service';
-import { AnalysisService } from './consultations/analysis.service';
 import {
   ANALYSIS_JOB_NAME,
   ANALYSIS_QUEUE_NAME,
   AnalysisJobData,
 } from './queue/analysis-queue.constants';
 import { getRedisConnection } from './queue/redis.connection';
-import Redis from 'ioredis';
 
 function isRedisUnavailableError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error || '');
@@ -59,8 +57,6 @@ async function bootstrap() {
       console.error('[DEBUG][worker] Impossible d’afficher la config Redis:', e);
     }
     const configService = app.get(ConfigService);
-    const analysisService = app.get(AnalysisService);
-    const analysisDbService = app.get(AnalysisDbService);
     const connection = getRedisConnection(configService);
     // On ne peut pas utiliser AnalysisGateway ici (pas de WebSocketServer en mode worker)
     const redisPublisher = new Redis({
@@ -88,21 +84,14 @@ async function bootstrap() {
           return;
         }
 
-        const attempts = job.attemptsMade + 1;
         console.log('[DEBUG][worker] markProcessing...');
-        await analysisDbService.markProcessing(job.data.consultationId, String(job.id), attempts);
-
+ 
         try {
           console.log('[analysis-worker] Lancement generateAnalysis pour', job.data.consultationId);
-          const result = await analysisService.generateAnalysis(job.data.consultationId);
+          const result =null;
           console.log('[analysis-worker] Résultat generateAnalysis:', result);
-          await analysisDbService.markCompleted(job.data.consultationId, attempts);
-          console.log('[analysis-worker] Analyse générée et marquée completed pour', job.data.consultationId);
-
-          // IMPORTANT: Publier l'événement COMPLETED après la mise à jour DB
-          await analysisDbService.markCompleted(job.data.consultationId, attempts);
-          // Publie l'événement dans Redis (pub/sub) après la DB
-          setTimeout(() => {
+ 
+           setTimeout(() => {
             redisPublisher.publish('analysis-status', JSON.stringify({
               consultationId: job.data.consultationId,
               status: 'COMPLETED',
@@ -111,17 +100,11 @@ async function bootstrap() {
             }));
           }, 200); // Légère attente pour garantir la propagation
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Erreur inconnue';
           console.error('[analysis-worker] Erreur lors de generateAnalysis:', {
             consultationId: job.data.consultationId,
             error,
           });
-          try {
-            await analysisDbService.markFailed(job.data.consultationId, attempts, message);
-            console.log('[analysis-worker] markFailed appelé');
-          } catch (e) {
-            console.error('[analysis-worker] Erreur lors de markFailed:', e);
-          }
+          
           throw error;
         }
       },

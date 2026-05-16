@@ -1,8 +1,6 @@
-import { Injectable, Logger, OnApplicationShutdown, ServiceUnavailableException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationShutdown, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
-import { ConsultationsService } from './consultations.service';
-import { AnalysisDbService } from './analysis-db.service';
 import {
   ANALYSIS_JOB_NAME,
   ANALYSIS_QUEUE_NAME,
@@ -17,19 +15,10 @@ export class AnalysisQueueService implements OnApplicationShutdown {
   private queue: Queue<AnalysisJobData> | null = null;
   private redisUnavailableUntil = 0;
 
-  private hasAnalysisResult(analysis: { texte?: string | null } | null | undefined): boolean {
-    return typeof analysis?.texte === 'string' && analysis.texte.trim().length > 0;
-  }
 
-  private getAnalysisConsultationId(analysis: { consultationId?: string } | null | undefined): string {
-    return String(analysis?.consultationId || '').trim();
-  }
 
   constructor(
     private readonly configService: ConfigService,
-    @Inject(forwardRef(() => ConsultationsService))
-    private readonly consultationsService: ConsultationsService,
-    private readonly analysisDbService: AnalysisDbService,
   ) {}
 
   async enqueueAnalysis(consultationId: string) {
@@ -44,37 +33,7 @@ export class AnalysisQueueService implements OnApplicationShutdown {
         'La file Redis est temporairement indisponible. Réessayez dans quelques secondes.',
       );
     }
-
-    console.log(`${logPrefix} Recherche consultation`);
-    this.logger.log(`${logPrefix} Recherche consultation`);
-    const consultation = await this.consultationsService.findOne(consultationId);
-    console.log(`${logPrefix} Consultation trouvée:`, consultation ? 'OK' : 'NON TROUVÉE');
-    this.logger.log(`${logPrefix} Consultation trouvée: ${consultation ? 'OK' : 'NON TROUVÉE'}`);
-    const existingAnalysis = await this.analysisDbService.findByConsultationId(consultationId);
-    console.log(`${logPrefix} Analyse existante:`, existingAnalysis ? existingAnalysis.status : 'Aucune');
-    this.logger.log(`${logPrefix} Analyse existante: ${existingAnalysis ? existingAnalysis.status : 'Aucune'}`);
-
-    if (
-      existingAnalysis?.status === AnalysisJobStatus.QUEUED ||
-      existingAnalysis?.status === AnalysisJobStatus.PROCESSING ||
-      existingAnalysis?.status === AnalysisJobStatus.COMPLETED
-    ) {
-      // Vérifie la présence réelle du job dans la queue BullMQ
-      const bullJob = await this.getQueue().getJob(consultationId);
-      if (bullJob) {
-        this.logger.log(`${logPrefix} Job déjà présent (statut: ${existingAnalysis.status}, job BullMQ présent)`);
-        console.log(`${logPrefix} Job déjà présent (statut: ${existingAnalysis.status}, job BullMQ présent)`);
-        return {
-          consultationId,
-          jobId: existingAnalysis.jobId || consultationId,
-          status: existingAnalysis.status,
-        };
-      } else {
-        this.logger.warn(`${logPrefix} Décalage détecté : la base indique QUEUED/PROCESSING/COMPLETED mais aucun job BullMQ. Réinjection forcée.`);
-        console.warn(`${logPrefix} Décalage détecté : la base indique QUEUED/PROCESSING/COMPLETED mais aucun job BullMQ. Réinjection forcée.`);
-        // On continue pour réenfiler le job
-      }
-    }
+ 
 
     let job;
     try {
@@ -101,27 +60,6 @@ export class AnalysisQueueService implements OnApplicationShutdown {
     }
 
     try {
-      await this.analysisDbService.createAnalysis({
-        consultationId,
-        texte: existingAnalysis?.texte || '',
-        clientId: this.extractUserId(consultation.clientId),
-        choiceId: consultation.choice?._id?.toString?.() || consultation.choiceId,
-        type: consultation.type,
-        status: AnalysisJobStatus.QUEUED,
-        title: consultation.title,
-        completedDate: consultation.completedDate,
-        prompt: consultation.choice?.prompt,
-        dateGeneration: existingAnalysis?.dateGeneration,
-        metadata: {
-          ...(existingAnalysis?.metadata || {}),
-          queuedAt: new Date().toISOString(),
-        },
-        jobId: String(job.id),
-        attempts: 0,
-        errorMessage: null,
-        startedAt: null,
-        finishedAt: null,
-      } as any);
       this.logger.log(`${logPrefix} Analyse créée/MAJ en base (jobId: ${String(job.id)})`);
       console.log(`${logPrefix} Analyse créée/MAJ en base (jobId: ${String(job.id)})`);
     } catch (error) {
@@ -141,72 +79,18 @@ export class AnalysisQueueService implements OnApplicationShutdown {
   }
 
   async getAnalysisJobStatus(consultationId: string) {
-    const analysis = await this.analysisDbService.findByConsultationId(consultationId);
+    
 
-    if (!analysis) {
-      return null;
-    }
-
-    const hasResult = this.hasAnalysisResult(analysis);
-    const effectiveStatus = hasResult ? AnalysisJobStatus.COMPLETED : (analysis.status || null);
-
-    // Ajout du log explicite si le job est en cours
-    if (effectiveStatus === AnalysisJobStatus.PROCESSING) {
-      this.logger.log(`Job en cours pour la consultation ${consultationId} (jobId: ${analysis.jobId || consultationId})`);
-    }
+    const hasResult = true;
+    
 
     return {
       consultationId,
-      jobId: analysis.jobId || consultationId,
-      status: effectiveStatus,
-      attempts: analysis.attempts || 0,
-      errorMessage: analysis.errorMessage || null,
-      startedAt: analysis.startedAt || null,
-      finishedAt: analysis.finishedAt || null,
-      dateGeneration: analysis.dateGeneration || null,
+     
       hasResult,
     };
   }
-
-  async getAnalysisJobStatuses(consultationIds: string[]) {
-    const analyses = await this.analysisDbService.findByConsultationIds(consultationIds);
-    const byConsultationId = new Map(
-      analyses.map((analysis: any) => [this.getAnalysisConsultationId(analysis), analysis]),
-    );
-
-    return consultationIds.map((consultationId) => {
-      const analysis: any = byConsultationId.get(consultationId);
-
-      if (!analysis) {
-        return {
-          consultationId,
-          jobId: consultationId,
-          status: null,
-          attempts: 0,
-          errorMessage: null,
-          startedAt: null,
-          finishedAt: null,
-          dateGeneration: null,
-          hasResult: false,
-        };
-      }
-
-      const hasResult = this.hasAnalysisResult(analysis as any);
-      const effectiveStatus = hasResult ? AnalysisJobStatus.COMPLETED : (analysis.status || null);
-
-      return {
-        consultationId,
-        jobId: analysis.jobId || consultationId,
-        status: effectiveStatus,
-        attempts: analysis.attempts || 0,
-        errorMessage: analysis.errorMessage || null,
-        startedAt: analysis.startedAt || null,
-        finishedAt: analysis.finishedAt || null,
-        dateGeneration: analysis.dateGeneration || null,
-        hasResult,
-      };
-    });
-  }
+ 
 
   async onApplicationShutdown() {
     await this.resetQueue();
@@ -240,27 +124,4 @@ export class AnalysisQueueService implements OnApplicationShutdown {
     return this.queue;
   }
 
-  private extractUserId(clientId: any): string | null {
-    if (!clientId) {
-      return null;
-    }
-
-    if (typeof clientId === 'string') {
-      return clientId;
-    }
-
-    if (typeof clientId === 'object' && clientId !== null) {
-      if ('toHexString' in clientId && typeof clientId.toHexString === 'function') {
-        return clientId.toHexString();
-      }
-      if ('_id' in clientId && clientId._id) {
-        return String(clientId._id);
-      }
-      if (typeof clientId.toString === 'function') {
-        return clientId.toString();
-      }
-    }
-
-    return null;
-  }
 }

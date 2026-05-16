@@ -1,13 +1,9 @@
-import { Patch } from '@nestjs/common';
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { UserDocument } from '../users/schemas/user.schema';
 import { ReorderChoicesDto } from './dto/reorder-choices.dto';
-import { RubriqueWithChoiceCountDto } from './dto/rubrique-with-count.dto';
 import { RubriqueDto } from './dto/rubrique.dto';
 import { RubriqueService } from './rubrique.service';
 
@@ -73,16 +69,7 @@ export class RubriqueController {
   findOne(@Param('id') id: string) {
     return this.rubriqueService.findOne(id);
   }
-
-  @Get(':id/choices-with-count')
-  @UseGuards(JwtAuthGuard)
-  getChoicesWithConsultationCount(
-    @Param('id') id: string,
-    @CurrentUser() user: UserDocument,
-  ): Promise<RubriqueWithChoiceCountDto> {
-    return this.rubriqueService.getChoicesWithConsultationCount(id, user._id.toString());
-  }
-
+ 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)

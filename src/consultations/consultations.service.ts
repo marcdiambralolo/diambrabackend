@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ConsultationStatus, ConsultationType } from '../common/enums/consultation-status.enum';
@@ -6,15 +6,11 @@ import { Role } from '../common/enums/role.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import { OfferingsService } from '../offerings/offerings.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
+import { AnalysisQueueService } from './analysis-queue.service';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
-import { SaveAnalysisDto } from './dto/save-analysis.dto';
 import { SendConsultationMessageDto } from './dto/send-consultation-message.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
 import { Consultation, ConsultationDocument } from './schemas/consultation.schema';
-import { Analysis } from './schemas/analysis.schema';
-import { UserConsultationChoiceService } from './user-consultation-choice.service';
-import { AnalysisDbService } from './analysis-db.service';
-import { AnalysisQueueService } from './analysis-queue.service';
 
 @Injectable()
 export class ConsultationsService {
@@ -23,30 +19,26 @@ export class ConsultationsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly notificationsService: NotificationsService,
     private readonly offeringsService: OfferingsService,
-    private readonly userConsultationChoiceService: UserConsultationChoiceService,
     @Inject(forwardRef(() => AnalysisQueueService))
     private readonly analysisQueueService: AnalysisQueueService,
-    private readonly analysisDbService: AnalysisDbService,
   ) {}
   private isPrivilegedConsultationRole(role: Role | undefined) {
     return role === Role.ADMIN || role === Role.SUPER_ADMIN;
   }
 
   private resolveConsultationAccess(
-    consultation: Pick<Consultation, 'clientId' | 'consultantId'>,
+    consultation: Pick<Consultation, 'clientId'>,
     user: Pick<UserDocument, '_id' | 'role'>,
   ) {
     const currentUserId = user._id.toString();
     const isPrivilegedRole = this.isPrivilegedConsultationRole(user.role);
-    const isAssignedConsultant = consultation.consultantId?.toString() === currentUserId;
     const isClientOwner = consultation.clientId?.toString() === currentUserId;
 
     return {
       currentUserId,
       isPrivilegedRole,
-      isAssignedConsultant,
       isClientOwner,
-      canAccess: isPrivilegedRole || isAssignedConsultant || isClientOwner,
+      canAccess: isPrivilegedRole  || isClientOwner,
     };
   }
 
@@ -210,10 +202,8 @@ export class ConsultationsService {
       updatedAt: consultationObj?.updatedAt || null,
       completedDate: detailed.completedDate || null,
       dateGeneration: detailed.dateGeneration || null,
-      pdfFile: detailed.pdfFile || null,
       analysisId: consultationObj?.analysisId || null,
       analysisDateGeneration: consultationObj?.analysisDateGeneration || null,
-      analysisNotified: detailed.analysisNotified ?? false,
       isPaid: detailed.isPaid,
       paymentId: detailed.paymentId || null,
       price: detailed.price,
@@ -237,34 +227,7 @@ export class ConsultationsService {
   }
 
 
-
-
-
-  /**
-   * Méthode statique pour synchronisation forcée depuis analysis-db.service
-   * Utilisation ConsultationsService.syncConsultationCompletionFromAnalysisStatic(consultationId, consultationModel, analysisModel)
-   */
-  static async syncConsultationCompletionFromAnalysisStatic(
-    consultationId: string,
-    consultationModel: typeof import('mongoose').Model<ConsultationDocument>,
-    analysisModel: typeof import('mongoose').Model<Analysis>
-  ) {
-    const consultation = await consultationModel.findById(consultationId);
-    if (!consultation) return;
-    const analysis = await analysisModel.findOne({ consultationId });
-    if (!analysis || !(typeof analysis.texte === 'string' && analysis.texte.trim().length > 0)) return;
-    let shouldSave = false;
-    if (consultation.status !== 'COMPLETED') {
-      consultation.status = 'COMPLETED';
-      shouldSave = true;
-    }
-    if (!consultation.completedDate) {
-      consultation.completedDate = analysis.finishedAt || analysis.dateGeneration || new Date();
-      shouldSave = true;
-    }
-    if (shouldSave) await consultation.save();
-  }
-
+ 
 
 
 
@@ -332,24 +295,13 @@ export class ConsultationsService {
     return consultation?.type === 'CINQ_ETOILES';
   }
 
-  private analysisHasResult(analysis: Pick<Analysis, 'texte' | 'status'> | null | undefined) {
-    if (typeof analysis?.texte === 'string' && analysis.texte.trim().length > 0) {
-      return true;
-    }
-
-    return analysis?.status === ConsultationStatus.COMPLETED;
-  }
 
   private async syncConsultationCompletionFromAnalysis<T extends ConsultationDocument | null>(consultation: T): Promise<T> {
     if (!consultation) {
       return consultation;
     }
 
-    const analysis = await this.analysisDbService.findByConsultationId(consultation._id.toString());
-    if (!this.analysisHasResult(analysis)) {
-      return consultation;
-    }
-
+   
     let shouldSave = false;
 
     if (consultation.status !== ConsultationStatus.COMPLETED) {
@@ -358,8 +310,7 @@ export class ConsultationsService {
     }
 
     if (!consultation.completedDate) {
-      consultation.completedDate = analysis?.finishedAt || analysis?.dateGeneration || new Date();
-      shouldSave = true;
+       shouldSave = true;
     }
 
     if (!shouldSave) {
@@ -400,9 +351,6 @@ export class ConsultationsService {
     return consultation;
   }
 
-  private async normalizeLegacyFreeCinqEtoilesConsultations<T extends ConsultationDocument>(consultations: T[]) {
-    return Promise.all(consultations.map((consultation) => this.normalizeLegacyFreeCinqEtoilesConsultation(consultation)));
-  }
   
   /**
    * Supprimer plusieurs consultations selon un filtre
@@ -462,24 +410,14 @@ export class ConsultationsService {
       price,
       formData,
       status,
-      alternatives,
       choice,
       requiredOffering,
       requiredOfferingsDetails,
-      tierce,
-      tierces,
       rubriqueId,
-      pdfFile,
       choiceId: dtoChoiceId
     } = createConsultationDto;
 
-    // Mapping des alternatives et choix
-    let mappedAlternatives = alternatives || [];
-    if (choice && choice.offering && Array.isArray(choice.offering.alternatives)) {
-      mappedAlternatives = choice.offering.alternatives;
-    }
-
-    // Mapping du formData (incluant carteDuCiel, missionDeVie, etc.)
+       // Mapping du formData (incluant carteDuCiel, missionDeVie, etc.)
     const mappedFormData = formData || {};
 
     // Déterminer le pays (priorité: paramètre country, puis DTO, puis formData)
@@ -501,18 +439,14 @@ export class ConsultationsService {
       description,
       rubriqueId,
       formData: mappedFormData,
-      tierce: tierce || null,
-      tierces: tierces || null,
       status: status || ConsultationStatus.PENDING,
       price: isFreeCinqEtoilesConsultation ? 0 : (price ?? 0),
       isPaid: isFreeCinqEtoilesConsultation,
-      alternatives: mappedAlternatives,
       requiredOffering: requiredOffering || null,
       requiredOfferingsDetails: requiredOfferingsDetails || [],
       choice: choice || null,
       choiceId: choiceId,
       country: finalCountry,
-      pdfFile: pdfFile || null,
     });
 
     await consultation.save();
@@ -659,9 +593,9 @@ export class ConsultationsService {
 
 
     // Populate alternatives with offering details
-    if (consultation.alternatives && consultation.alternatives.length) {
-      consultation.alternatives = await this.populateAlternatives(consultation.alternatives);
-    }
+    // if (consultation.alternatives) {
+    //   consultation.alternatives = await this.populateAlternatives(consultation.alternatives);
+    // }
 
     return consultation;
   }
@@ -780,55 +714,7 @@ export class ConsultationsService {
 
     return consultation;
   }
-
-  /**
-   * Sauvegarder l'analyse générée
-   */
-  async saveAnalysis(id: string, saveAnalysisDto: SaveAnalysisDto) {
-    const consultation = await this.consultationModel.findById(id).exec();
-
-    if (!consultation) {
-      throw new NotFoundException('Consultation not found');
-    }
-
-    // Vérifier si une analyse existe déjà pour ce choix de consultation
-    const choiceId = consultation.choice?._id;
-    if (choiceId && consultation.clientId) {
-      const executedChoiceIds = await this.userConsultationChoiceService.getExecutedChoiceIds(consultation.clientId.toString(), id);
-      if (executedChoiceIds.includes(choiceId)) {
-        throw new ForbiddenException('Une analyse existe déjà pour ce choix de consultation.');
-      }
-    }
-
-    // Mettre à jour avec l'analyse
-    consultation.status =
-      saveAnalysisDto.status === 'completed'
-        ? ConsultationStatus.COMPLETED
-        : ConsultationStatus.PENDING;
-
-    // Enregistrer le choix de consultation utilisateur pour manipulation des fréquences (une seule fois)
-    if (consultation.clientId && choiceId) {
-      await this.userConsultationChoiceService.recordChoicesForConsultation(
-        consultation.clientId.toString(),
-        consultation._id.toString(),
-        [{
-          title: consultation.title,
-          choiceId,
-          frequence: consultation.choice?.frequence || 'LIBRE',
-          participants: consultation.choice?.participants || 'SOLO',
-        }]
-      );
-    }
-
-    if (saveAnalysisDto.status === 'completed') {
-      consultation.completedDate = new Date();
-      // NE PAS notifier ni marquer comme notifié ici, cela sera fait par un administrateur ultérieurement
-    }
-
-    await consultation.save();
-    return consultation;
-  }
-
+ 
   /**
    * Supprimer une consultation
    */
@@ -1098,38 +984,17 @@ export class ConsultationsService {
    * Marquer une analyse comme notifiée
    * Utilisé lorsqu'une notification est envoyée à l'utilisateur
    */
-  async markAnalysisAsNotified(consultationId: string): Promise<Analysis> {
+  async markAnalysisAsNotified(consultationId: string): Promise<any> {
     const consultation = await this.consultationModel.findById(consultationId).exec();
 
     if (!consultation) {
       throw new NotFoundException('Consultation not found');
     }
-
-    const analysis = await this.analysisDbService.markAnalysisAsNotified(consultationId);
-
-    if (!analysis) {
-      throw new NotFoundException('Analysis not found');
-    }
-
-    consultation.analysisNotified = true;
+ 
     await consultation.save();
 
-    return analysis;
+    return null;
   }
 
-  /**
-   * Vérifier si une analyse a été notifiée
-   */
-  async isAnalysisNotified(consultationId: string): Promise<boolean> {
-    const consultation = await this.consultationModel
-      .findById(consultationId)
-      .select('analysisNotified')
-      .exec();
-
-    if (!consultation) {
-      throw new NotFoundException('Consultation not found');
-    }
-
-    return consultation.analysisNotified === true;
-  }
+  
 }

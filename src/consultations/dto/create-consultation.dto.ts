@@ -14,70 +14,56 @@ import { ConsultationType } from '../../common/enums/consultation-status.enum';
 
 export class ConsultationChoiceDto {
   @IsObject()
-  offering: {
-    alternatives: Array<{
+  offering!: {
+    alternative: {
       category: string;
       offeringId: string;
       quantity: number;
       _id: string;
-    }>;
+    };
   };
 
   @IsString()
-  title: string;
+  title!: string;
 
   @IsString()
-  description: string;
+  description!: string;
 
   @IsString()
-  frequence: string;
-
-  @IsString()
-  participants: string;
-
-  @IsString()
-  _id: string;
+  _id!: string;
 }
 
 export class OfferingAlternativeDto {
   @IsString()
-  offeringId: string;
+  offeringId!: string;
 
   @IsNumber()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 }
 
 export class RequiredOfferingDto {
-  @IsString()
-  type: 'animal' | 'vegetal' | 'boisson';
-
-  @IsArray()
-  alternatives: OfferingAlternativeDto[];
-
-  @IsString()
-  selectedAlternative: 'animal' | 'vegetal' | 'boisson';
+  @IsOptional()
+  alternative!: OfferingAlternativeDto;
 }
 
 export class RequiredOfferingDetailDto {
   @IsString()
-  _id: string;
+  _id!: string;
 
   @IsString()
-  name: string;
+  name!: string;
 
   @IsNumber()
   @Min(0)
-  price: number;
+  price!: number; 
 
   @IsString()
-
-  @IsString()
-  category: string;
+  category!: string;
 
   @IsNumber()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 }
 
 export class CreateConsultationDto {
@@ -113,41 +99,7 @@ export class CreateConsultationDto {
   @IsObject()
   @IsOptional()
   formData?: {
-    firstName?: string;
-    lastName?: string;
-    dateOfBirth?: Date;
-    timeOfBirth?: string;
-    countryOfBirth?: string;
-    cityOfBirth?: string;
-    gender?: string;
-    phone?: string;
-    email?: string;
-    country?: string;
-    question?: string;
     username?: string;
-    _id?: string;
-    role?: string;
-    customPermissions?: any[];
-    isActive?: boolean;
-    emailVerified?: boolean;
-    preferences?: any;
-    specialties?: any[];
-    rating?: number;
-    totalConsultations?: number;
-    credits?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-    __v?: number;
-    lastLogin?: Date;
-    dateNaissance?: Date;
-    genre?: string;
-    heureNaissance?: string;
-    nom?: string;
-    paysNaissance?: string;
-    prenoms?: string;
-    villeNaissance?: string;
-    premium?: boolean;
-    carteDuCiel?: any;
     [key: string]: any;
   };
 
@@ -171,22 +123,11 @@ export class CreateConsultationDto {
   @IsArray()
   @Type(() => OfferingAlternativeDto)
   @IsOptional()
-  alternatives?: OfferingAlternativeDto[];
+  alternative?: OfferingAlternativeDto;
 
   @IsArray()
   @IsOptional()
   requiredOfferingsDetails?: RequiredOfferingDetailDto[];
-
-  @IsObject()
-  @IsOptional()
-  tierce?: any;
-
-  @IsObject()
-  @IsOptional()
-  tierces?: any;
-
-  @IsOptional()
-  analysisNotified?: boolean;
 
   @IsOptional()
   @IsString()
@@ -194,13 +135,9 @@ export class CreateConsultationDto {
 
   @IsOptional()
   @IsString()
-  pdfFile?: string; // URL du fichier PDF associé à la consultation
-
-  @IsOptional()
-  @IsString()
   country?: string;
 
   @IsOptional()
-   @IsString()
+  @IsString()
   choiceId?: string;
 }
