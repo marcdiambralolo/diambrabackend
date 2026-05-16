@@ -17,6 +17,7 @@ export class WalletController {
   ) { }
 
   @Post('transactions')
+  @UseGuards(JwtAuthGuard) 
   async create(@Body() dto: CreateWalletTransactionDto, @CurrentUser() user: UserDocument) {
     const transaction = await this.walletService.createTransaction(dto, user._id.toString());
     return { transaction };
