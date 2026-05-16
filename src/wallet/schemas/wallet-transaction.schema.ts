@@ -15,9 +15,6 @@ export class OfferingItem {
   name!: string;
 
   @Prop({ required: false })
-  category?: string;
-
-  @Prop({ required: false })
   unitPrice!: number;
 
   @Prop({ required: false })
