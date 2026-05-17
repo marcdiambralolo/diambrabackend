@@ -19,9 +19,6 @@ export class ConsultationChoice {
   title!: string;
 
   @Prop({ required: true })
-  description!: string;
-
-  @Prop({ required: true })
   _id!: string;
 }
 
@@ -101,9 +98,6 @@ export class Consultation {
 
   @Prop({ required: true })
   title!: string;
-
-  @Prop({ required: true })
-  description!: string;
 
   @Prop({ type: Object, default: {} })
   formData!: {

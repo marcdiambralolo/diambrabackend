@@ -149,7 +149,6 @@ export class ConsultationsService {
       normalizedStatus: detailed.normalizedStatus,
       title: detailed.title,
       titre: detailed.titre,
-      description: detailed.description,
       createdAt: consultationObj?.createdAt || null,
       updatedAt: consultationObj?.updatedAt || null,
       completedDate: detailed.completedDate || null,
@@ -186,7 +185,6 @@ export class ConsultationsService {
       consultationId: consultation._id.toString(),
       accessRole,
       title: consultation.title,
-      description: consultation.description,
       createdAt: consultation.createdAt,
       updatedAt: consultation.updatedAt,
       completedDate: consultation.completedDate,
@@ -285,7 +283,6 @@ export class ConsultationsService {
     // Adaptation du payload frontend
     const {
       title,
-      description,
       price,
       formData,
       status,
@@ -310,7 +307,6 @@ export class ConsultationsService {
     const consultation = new this.consultationModel({
       clientId,
       title,
-      description,
       formData: mappedFormData,
       status: status,
       price: price || 0,
@@ -724,7 +720,6 @@ export class ConsultationsService {
       consultationId: consultation._id.toString(),
       consultantId,
       title: consultation.title,
-      description: consultation.description,
       createdAt: consultationRecord.createdAt,
       updatedAt: consultationRecord.updatedAt,
       completedDate: consultation.completedDate,

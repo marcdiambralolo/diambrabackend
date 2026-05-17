@@ -25,9 +25,6 @@ export class ConsultationChoiceDto {
   title!: string;
 
   @IsString()
-  description!: string;
-
-  @IsString()
   _id!: string;
 }
 
@@ -76,11 +73,6 @@ export class CreateConsultationDto {
   @MaxLength(200)
   @IsOptional()
   title?: string;
-
-  @IsString()
-  @MaxLength(2000)
-  @IsOptional()
-  description?: string;
 
   @IsObject()
   @IsOptional()
