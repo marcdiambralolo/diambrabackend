@@ -17,9 +17,6 @@ export class NotificationPreferences {
   @Prop({ default: true })
   systemUpdates!: boolean;
 
-  @Prop({ default: false })
-  promotions!: boolean;
-
   @Prop({ default: true })
   emailNotifications!: boolean;
 

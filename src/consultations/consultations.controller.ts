@@ -31,7 +31,6 @@ export class ConsultationsController {
     private readonly consultationsService: ConsultationsService,
   ) { }
 
-
   /**
    * POST /consultations
    * Créer une consultation pour un utilisateur authentifié
@@ -57,7 +56,7 @@ export class ConsultationsController {
       consultation: normalizedConsultation,
     };
   }
- 
+
   /**
    * GET /consultations
    * Récupérer toutes les consultations (PUBLIC)
@@ -90,9 +89,6 @@ export class ConsultationsController {
       total: result.total,
     };
   }
-
-
-   
 
   /**
    * GET /consultations/user/:userId
@@ -144,7 +140,7 @@ export class ConsultationsController {
     @Query('limit') limit?: number,
   ) {
     const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
-     return {
+    return {
       success: true,
       userId: user._id,
       consultations: result.consultations.map((consultation: any) =>
@@ -157,8 +153,6 @@ export class ConsultationsController {
     };
   }
 
-  
-
   /**
    * GET /consultations/:id/front-data
    * Retourne un payload agrégé pour la page résultat et la messagerie.
@@ -169,11 +163,11 @@ export class ConsultationsController {
     @CurrentUser() user: UserDocument,
   ) {
     const { consultation } = await this.consultationsService.findOneForUser(id, user);
- 
+
     return {
       success: true,
       consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
-     };
+    };
   }
 
   /**
@@ -242,7 +236,6 @@ export class ConsultationsController {
     }));
   }
 
-   
   /**
    * DELETE /consultations/:id
    * Supprimer une consultation

@@ -14,8 +14,7 @@ import { SiteMetricsModule } from './common/site-metrics.module';
 import { ConsultationsModule } from './consultations/consultations.module';
 import { DoorsJobController } from './doors-job/doors-job.controller';
 import { DoorsJobModule } from './doors-job/doors-job.module';
-import { MessagingModule } from './messaging/messaging.module';
-import { MoneyfusionModule } from './moneyfusion/moneyfusion.module';
+ import { MoneyfusionModule } from './moneyfusion/moneyfusion.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { OfferingStockModule } from './offerings/offering-stock.module';
 import { OfferingsModule } from './offerings/offerings.module';
@@ -83,7 +82,6 @@ import { WalletModule } from './wallet/wallet.module';
     OfferingStockModule,
     UploadModule, 
     RedisModule,
-    MessagingModule,
     DoorsJobModule,
   ],
   controllers: [AppController, DoorsJobController],

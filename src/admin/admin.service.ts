@@ -5,7 +5,6 @@ import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
 import { PaymentStatus } from '../common/enums/payment-status.enum';
 import { Role } from '../common/enums/role.enum';
-import { AnalysisQueueService } from '../consultations/analysis-queue.service';
 import { Consultation, ConsultationDocument } from '../consultations/schemas/consultation.schema';
 import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
@@ -20,7 +19,6 @@ export class AdminService {
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectModel(WalletTransaction.name) private walletTransactionModel: Model<WalletTransactionDocument>,
     private readonly configService: ConfigService,
-    private readonly analysisQueueService: AnalysisQueueService,
   ) { }
 
   private startOfDay(date = new Date()) {
@@ -486,68 +484,6 @@ export class AdminService {
     });
 
     return { payments, total };
-  }
-
-  async enqueueAnalysisJobs(consultationIds: string[]) {
-    const uniqueIds = Array.from(new Set(consultationIds.filter(Boolean)));
-    const items: Array<{
-      consultationId: string;
-      success: boolean;
-      jobId?: string;
-      status: string | null;
-      error?: string;
-    }> = [];
-
-    console.log('[enqueueAnalysisJobs] Début pour', uniqueIds);
-    for (let index = 0; index < uniqueIds.length; index += 1) {
-      const consultationId = uniqueIds[index];
-      console.log(`[enqueueAnalysisJobs] Tentative enqueue pour consultationId=${consultationId}`);
-      try {
-        const result = await this.analysisQueueService.enqueueAnalysis(consultationId);
-        console.log(`[enqueueAnalysisJobs] Enqueue réussi pour consultationId=${consultationId}`, result);
-        items.push({
-          success: true,
-          ...result,
-        });
-      } catch (reason: any) {
-        const errorMessage =
-          reason?.response?.message || reason?.message || 'Erreur inconnue';
-
-        items.push({
-          consultationId,
-          success: false,
-          status: null,
-          error: errorMessage,
-        });
-
-        if (reason?.status === 503 || reason?.statusCode === 503) {
-          for (let nextIndex = index + 1; nextIndex < uniqueIds.length; nextIndex += 1) {
-            items.push({
-              consultationId: uniqueIds[nextIndex],
-              success: false,
-              status: null,
-              error: errorMessage,
-            });
-          }
-          break;
-        }
-      }
-    }
-
-    return {
-      total: uniqueIds.length,
-      accepted: items.filter((item) => item.success).length,
-      failed: items.filter((item) => !item.success).length,
-      items,
-    };
-  }
-
-  async getAnalysisJobsStatuses(consultationIds: string[]) {
-    const uniqueIds = Array.from(new Set(consultationIds.filter(Boolean)));
-
-    return {
-      total: uniqueIds.length,
-    };
   }
 
   async getUserById(id: string) {

@@ -35,16 +35,8 @@ export class CreateUserDto {
   isActive?: boolean = true;
 
   @IsOptional()
-  @IsBoolean()
-  emailVerified?: boolean = false;
-
-  @IsOptional()
-  credits?: number = 0;
-
-  @IsOptional()
   @IsObject()
   preferences?: {
     notifications?: boolean;
-    newsletter?: boolean;
   };
 }

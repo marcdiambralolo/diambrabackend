@@ -137,8 +137,6 @@ export class ConsultationsService {
       titre: detailed.titre,
       createdAt: consultationObj?.createdAt || null,
       updatedAt: consultationObj?.updatedAt || null,
-      completedDate: detailed.completedDate || null,
-      dateGeneration: detailed.dateGeneration || null,
       paymentId: detailed.paymentId || null,
       price: detailed.price,
       client,

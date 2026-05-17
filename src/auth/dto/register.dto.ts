@@ -36,11 +36,6 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  fullName?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
   city?: string;
 
   @IsOptional()

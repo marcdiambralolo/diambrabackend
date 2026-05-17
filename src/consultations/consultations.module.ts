@@ -8,16 +8,11 @@ import { Notification, NotificationSchema } from '../notifications/schemas/notif
 import { OfferingsModule } from '../offerings/offerings.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AnalysisQueueService } from './analysis-queue.service';
-import { ConsultationChoiceController } from './consultation-choice.controller';
-import { ConsultationChoiceService } from './consultation-choice.service';
- import { ConsultationsController } from './consultations.controller';
+import { ConsultationsController } from './consultations.controller';
 import { ConsultationsService } from './consultations.service';
 import { DeepseekService } from './deepseek.service';
-import { ConsultationChoiceSchema } from './schemas/consultation-choice.schema';
 import { Consultation, ConsultationSchema } from './schemas/consultation.schema';
-import { UserConsultationChoice, UserConsultationChoiceSchema } from './schemas/user-consultation-choice.schema';
-import { UserConsultationChoiceService } from './user-consultation-choice.service';
-
+ 
 @Module({
   imports: [
     HttpModule,
@@ -26,17 +21,14 @@ import { UserConsultationChoiceService } from './user-consultation-choice.servic
     MongooseModule.forFeature([
       { name: Consultation.name, schema: ConsultationSchema },
       { name: Notification.name, schema: NotificationSchema },
-      { name: UserConsultationChoice.name, schema: UserConsultationChoiceSchema },
-      { name: 'ConsultationChoice', schema: ConsultationChoiceSchema },
-      { name: User.name, schema: UserSchema }, 
+       { name: User.name, schema: UserSchema },
     ]),
-    NotificationsModule, 
+    NotificationsModule,
   ],
-  controllers: [ConsultationsController,  ConsultationChoiceController,],
-  providers: [AnalysisQueueService,  ConsultationsService, DeepseekService,
-    UserConsultationChoiceService, 
-    ConsultationChoiceService,   UsersService, GeolocationService,
+  controllers: [ConsultationsController,],
+  providers: [AnalysisQueueService, ConsultationsService, DeepseekService,
+    UsersService, GeolocationService,
   ],
-  exports: [ConsultationsService, DeepseekService, UserConsultationChoiceService, AnalysisQueueService,  ConsultationChoiceService,   UsersService,]
+  exports: [ConsultationsService, DeepseekService, AnalysisQueueService, UsersService,]
 })
 export class ConsultationsModule { }

@@ -31,13 +31,7 @@ export class CreateUserDto {
   @IsOptional()
   @MaxLength(255)
   photo?: string;  
-   
-  
-  @IsString()
-  @IsOptional()
-  @MaxLength(500)
-  message?: string;
-
+    
   @IsString()
   @IsOptional()
   @MaxLength(100)
@@ -46,12 +40,7 @@ export class CreateUserDto {
   @IsEmail()
   @IsOptional()
   email?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(255)
-  idPhoto?: string; 
-
+ 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password!: string;

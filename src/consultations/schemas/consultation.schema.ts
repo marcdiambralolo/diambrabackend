@@ -17,9 +17,6 @@ export class Consultation {
     [key: string]: any;
   };
 
-  @Prop({ default: null })
-  completedDate!: Date; // Date de complétion
-
   @Prop({ default: 0 })
   price!: number; // Prix en euros
 
@@ -28,9 +25,6 @@ export class Consultation {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Payment', default: null })
   paymentId!: MongooseSchema.Types.ObjectId;
-
-  @Prop({ default: null })
-  notes!: string;
 
   @Prop({ type: String, default: null })
   country!: string;
