@@ -61,8 +61,7 @@ export class OfferingsController {
     }
     
     // Validation des types
-    const price = Number(data.price);
-    
+    const price = Number(data.price);   
     
     if (isNaN(price) || price <= 0) {
       throw new BadRequestException('Le prix doit être un nombre positif');
@@ -92,12 +91,10 @@ export class OfferingsController {
   ) {
     console.log(`[OfferingsController][PUT] Mise à jour de l'offrande ${id}`);
     
-    // Récupérer l'offrande existante
     const existingOffering = await this.offeringsService.findById(id);
     if (!existingOffering) {
       throw new NotFoundException('Offrande non trouvée');
-    }
-    
+    }    
     // Préparer les données de mise à jour
     const updatePayload: UpdateOfferingDto = {};
     

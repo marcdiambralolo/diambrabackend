@@ -6,7 +6,7 @@ export type SiteMetricsDocument = SiteMetrics & Document;
 @Schema({ collection: 'site_metrics' })
 export class SiteMetrics {
   @Prop({ default: 0 })
-  visits: number;
+  visits!: number;
 }
 
 export const SiteMetricsSchema = SchemaFactory.createForClass(SiteMetrics);

@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RubriqueDto } from './dto/rubrique.dto';
 import { ConsultationChoice, Rubrique, RubriqueDocument } from './rubrique.schema';
- 
+
 @Injectable()
 export class RubriqueService {
   constructor(
@@ -17,7 +17,7 @@ export class RubriqueService {
     try {
       console.log('addConsultationChoice called with:', { rubriqueId, dto });
       const rubrique = await this.rubriqueModel.findById(rubriqueId);
-      if (!rubrique) throw new NotFoundException('Rubrique non trouvée');    
+      if (!rubrique) throw new NotFoundException('Rubrique non trouvée');
 
       // Normalisation de l'objet offering
       const offering = Array.isArray(dto.offering)
@@ -31,23 +31,23 @@ export class RubriqueService {
         const { category, offeringId, quantity } = alt;
         return { category, offeringId, quantity };
       });
-      
+
 
       // Validation des champs requis
-      if (!dto.title || !dto.description  ) {
+      if (!dto.title || !dto.description) {
         throw new Error('Champs requis manquants (title, description, gradeId, frequence, participants)');
       }
-      
+
 
       // Construction du choix nettoyé
       const cleanedChoice = {
         prompt: dto.prompt,
         title: dto.title,
-        description: dto.description,       
+        description: dto.description,
         offering: { alternatives },
-         
+
       };
- 
+
 
       // Création explicite du sous-document ConsultationChoice via le modèle Mongoose
       await this.rubriqueModel.updateOne(
@@ -65,10 +65,10 @@ export class RubriqueService {
     }
   }
 
- 
+
 
   async findAll() {
-    return this.rubriqueModel.find().populate('categorieId').lean().exec();
+    return this.rubriqueModel.find().lean().exec();
   }
 
   async findOne(id: string) {
@@ -82,9 +82,7 @@ export class RubriqueService {
 
   async create(dto: RubriqueDto) {
     dto.consultationChoices = dto.consultationChoices.map((choice) => {
-      // Nettoyage gradeId
- 
-      // Normalisation de l'objet offering
+
       const offering = Array.isArray(choice.offering)
         ? { alternatives: choice.offering }
         : choice.offering;
@@ -95,23 +93,19 @@ export class RubriqueService {
 
       // Nettoyage et validation des alternatives
       const alternatives = (offering.alternatives || []).map(({ category, offeringId, quantity }) => ({ category, offeringId, quantity }));
-      const requiredCats = ['animal', 'vegetal', 'beverage'];
-      const catsSet = new Set(alternatives.map(a => a.category));
-      if (alternatives.length !== 3 || requiredCats.some(cat => !catsSet.has(cat))) {
-        throw new Error('Chaque choix doit avoir 3 alternatives différentes : animal, vegetal, beverage');
-      }
+
       return {
         title: choice.title,
         description: choice.description,
         offering: { alternatives },
-       };
+      };
     });
     return this.rubriqueModel.create(dto);
   }
 
   cleanConsultationChoices(choices: any[]): ConsultationChoice[] {
     return choices.map(choice => {
-       return {
+      return {
         _id: choice._id,
         title: choice.title,
         description: choice.description,
@@ -122,7 +116,7 @@ export class RubriqueService {
             offeringId: alt.offeringId,
             quantity: alt.quantity,
           })),
-        }, 
+        },
       };
     });
   }
@@ -182,7 +176,7 @@ export class RubriqueService {
 
     return alternativesWithName;
   }
- 
+
   // Helper: transforme une valeur (ObjectId | string | objet populate) en string id
   toIdString(v: unknown): string | null {
     if (!v) return null;

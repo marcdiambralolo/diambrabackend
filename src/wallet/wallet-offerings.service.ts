@@ -1,12 +1,10 @@
-import { Injectable, Inject, forwardRef, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { WalletTransaction, WalletTransactionDocument } from './schemas/wallet-transaction.schema';
-import { OfferingStockService } from '../offerings/offering-stock.service';
 import { Consultation, ConsultationDocument } from '../consultations/schemas/consultation.schema';
+import { OfferingStockService } from '../offerings/offering-stock.service';
 import { OfferingsService } from '../offerings/offerings.service';
-import { ConsultationStatus } from '../common/enums/consultation-status.enum';
-
+import { WalletTransaction, WalletTransactionDocument } from './schemas/wallet-transaction.schema';
 
 export interface UserOffering {
   offeringId: string;
@@ -32,7 +30,6 @@ interface ConsumptionResult {
 
 export interface ConsultationValidationResult extends ConsumptionResult {
   consultationId: string;
-  consultationStatus: ConsultationStatus;
 }
 
 @Injectable()
@@ -235,11 +232,9 @@ export class WalletOfferingsService {
       throw new ForbiddenException('Vous ne pouvez pas valider cette consultation');
     }
 
-    const previousStatus = consultation.status;
     const previousIsPaid = Boolean((consultation as any).isPaid);
 
     await this.consultationModel.findByIdAndUpdate(consultationId, {
-      status: ConsultationStatus.PENDING,
       isPaid: true,
     }).exec();
 
@@ -249,11 +244,9 @@ export class WalletOfferingsService {
       return {
         ...consumption,
         consultationId,
-        consultationStatus: ConsultationStatus.PENDING,
       };
     } catch (error) {
       await this.consultationModel.findByIdAndUpdate(consultationId, {
-        status: previousStatus,
         isPaid: previousIsPaid,
       }).exec();
 

@@ -3,10 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model } from 'mongoose';
-import { ConsultationStatus } from '../common/enums/consultation-status.enum';
-import { AnalysisQueueService } from '../consultations/analysis-queue.service';
 import { PaymentStatus } from '../common/enums/payment-status.enum';
 import { Role } from '../common/enums/role.enum';
+import { AnalysisQueueService } from '../consultations/analysis-queue.service';
 import { Consultation, ConsultationDocument } from '../consultations/schemas/consultation.schema';
 import { Payment, PaymentDocument } from '../payments/schemas/payment.schema';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
@@ -60,6 +59,7 @@ export class AdminService {
     await user.save();
 
     const { password: _, ...userWithoutPassword } = user.toObject();
+    console.log('userWithoutPassword', _);
 
     return userWithoutPassword;
   }
@@ -81,16 +81,15 @@ export class AdminService {
     // Consultations
     const totalConsultations = await this.consultationModel.countDocuments().exec();
     const pendingConsultations = await this.consultationModel
-      .countDocuments({ status: ConsultationStatus.PENDING })
+      .countDocuments()
       .exec();
     const completedConsultations = await this.consultationModel
-      .countDocuments({ status: ConsultationStatus.COMPLETED })
+      .countDocuments()
       .exec();
 
     // Consultation revenue (sum of price for completed consultations)
     const revenueAgg = await this.consultationModel
       .aggregate([
-        { $match: { status: ConsultationStatus.COMPLETED } },
         { $group: { _id: null, total: { $sum: '$price' } } },
       ])
       .exec();
@@ -356,6 +355,7 @@ export class AdminService {
     const users = docs.map((u: any) => {
       // Retirer uniquement le mot de passe, tout le reste est retourné
       const { password, ...userData } = u;
+      console.log(password);
       return userData;
     });
 

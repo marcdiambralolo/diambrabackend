@@ -49,27 +49,7 @@ export interface DeepSeekResponse {
     total_tokens: number;
   };
 }
-
-export interface AnalysisResult {
-  timestamp: Date;
-  carteDuCiel: {
-    aspectsTexte: string;
-  };
-  metadata: {
-    processingTime: number;
-    tokensUsed: number;
-    model: string;
-    cached?: boolean;
-  };
-}
-
-export interface PlanetPosition {
-  planete: string;
-  signe: string;
-  maison: number;
-  retrograde: boolean;
-  degre?: number;
-}
+  
 
 // Configuration minimale sans cache
 const DEFAULT_CONFIG = {

@@ -16,11 +16,9 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
-import { ConsultationStatus } from '../common/enums/consultation-status.enum';
 import { Permission } from '../common/enums/permission.enum';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { GeolocationService } from '../common/services/geolocation.service';
 import { UserDocument } from '../users/schemas/user.schema';
 import { ConsultationsService } from './consultations.service';
 import { SendConsultationMessageDto } from './dto/send-consultation-message.dto';
@@ -32,7 +30,6 @@ import { UpdateConsultationDto } from './dto/update-consultation.dto';
 export class ConsultationsController {
   constructor(
     private readonly consultationsService: ConsultationsService,
-    private readonly geolocationService: GeolocationService,
   ) { }
 
 
@@ -61,22 +58,7 @@ export class ConsultationsController {
       consultation: normalizedConsultation,
     };
   }
-
-  /**
-   * POST /consultations/personal
-   * Créer une consultation personnelle
-   */
-  @Post('personal')
-  async createPersonalConsultation(@Body() body: any) {
-    const consultation = await this.consultationsService.createPersonalConsultation(body);
-
-    return {
-      success: true,
-      message: 'Consultation personnelle créée avec succès',
-      consultation: this.consultationsService.serializeConsultationForFrontend(consultation),
-    };
-  }
-
+ 
   /**
    * GET /consultations
    * Récupérer toutes les consultations (PUBLIC)
@@ -91,7 +73,6 @@ export class ConsultationsController {
   async findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-    @Query('status') status?: ConsultationStatus,
     @Query('type') type?: string,
     @Query('userId') userId?: string,
   ) {
@@ -161,6 +142,35 @@ export class ConsultationsController {
     return {
       success: true,
       userId,
+      consultations: result.consultations.map((consultation: any) =>
+        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
+      ),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
+  /**
+   * GET /consultations/me
+   * Récupérer les consultations de l'utilisateur connecté
+   */
+  @Get('me')
+  @ApiOperation({
+    summary: "Récupérer les consultations de l'utilisateur connecté",
+    description: "Retourne toutes les consultations de l'utilisateur actuellement authentifié.",
+  })
+  @ApiResponse({ status: 200, description: "Liste des consultations de l'utilisateur connecté." })
+  async getMyConsultations(
+    @CurrentUser() user: UserDocument,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
+     return {
+      success: true,
+      userId: user._id,
       consultations: result.consultations.map((consultation: any) =>
         this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
       ),

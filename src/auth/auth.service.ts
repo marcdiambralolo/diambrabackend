@@ -203,7 +203,7 @@ export class AuthService {
       phone,
       email,
       password: hashedPassword,
-      role: Role.ADMIN, // Par défaut USER
+      role: Role.USER, // Par défaut USER
       isActive: true,
     });
 

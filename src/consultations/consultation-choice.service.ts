@@ -12,24 +12,7 @@ export class ConsultationChoiceService {
     private consultationChoiceModel: Model<ConsultationChoiceDocument>,
     @InjectModel(Rubrique.name)
     private rubriqueModel: Model<RubriqueDocument>,
-  ) { }
-
-  async findOneWithPrompt(id: string): Promise<any> {
-    // Cherche le choix de consultation par ID
-    const choice = await this.consultationChoiceModel.findById(id).exec();
-    if (!choice) {
-      throw new NotFoundException(`Choix de consultation avec l'ID ${id} introuvable`);
-    }
-
-    return {
-      _id: choice._id,
-      title: choice.title,
-      description: choice.description,
-      offering: (choice as any)?.offering ?? null,
-      rubriqueId: (choice as any)?.rubriqueId ?? null,
-      rubriqueTitle: (choice as any)?.rubriqueTitle ?? null,
-    };
-  }
+  ) { } 
 
   async findByIdRaw(id: string): Promise<ConsultationChoice> {
     const choice = await this.consultationChoiceModel.findById(id).exec();

@@ -1,10 +1,8 @@
-import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
+import { Module } from '@nestjs/common';
+import { UsersModule } from '../users/users.module';
 import { DoorsJobProcessor } from './doors-job.processor';
 import { DoorsJobService } from './doors-job.service';
-import { UsersModule } from '../users/users.module';
-import { ConsultationsModule } from '../consultations/consultations.module';
-import { RubriqueModule } from '../rubriques/rubrique.module';
 
 @Module({
   imports: [
@@ -12,8 +10,6 @@ import { RubriqueModule } from '../rubriques/rubrique.module';
       name: 'user-doors',
     }),
     UsersModule,
-    ConsultationsModule,
-    RubriqueModule,
   ],
   providers: [DoorsJobProcessor, DoorsJobService],
   exports: [DoorsJobService],

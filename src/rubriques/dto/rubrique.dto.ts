@@ -2,16 +2,13 @@ import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class ConsultationOfferingDto {
   @IsString()
-  category!: 'animal' | 'vegetal' | 'beverage';
-
-  @IsString()
   offeringId!: string;
 
   @IsOptional()
   quantity?: number = 1;
 }
 
-class ConsultationChoiceDto { 
+class ConsultationChoiceDto {
   @IsOptional()
   @IsString()
   choiceId?: string;
@@ -19,11 +16,7 @@ class ConsultationChoiceDto {
   @IsOptional()
   @IsString()
   choiceTitle?: string;
-
-  @IsOptional()
-  @IsString()
-  buttonStatus?: string;
-
+  
   @IsOptional()
   hasActiveConsultation?: boolean;
 
@@ -39,11 +32,11 @@ class ConsultationChoiceDto {
 
   @IsString()
   description!: string;
- 
+
   offering!: {
     alternatives: ConsultationOfferingDto[];
   };
-  
+
 }
 
 export class RubriqueDto {
@@ -64,7 +57,7 @@ export class RubriqueDto {
   @IsOptional()
   @IsString()
   typeconsultation?: string;
- 
+
   @IsArray()
   consultationChoices!: ConsultationChoiceDto[];
 }

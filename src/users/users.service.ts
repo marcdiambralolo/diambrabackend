@@ -53,7 +53,7 @@ export class UsersService {
    * Créer un nouvel utilisateur (admin only)
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, password, gender, phone, specialties, ...rest } = createUserDto;
+    const { username, password, gender, phone,  ...rest } = createUserDto;
 
     // Générer l'email automatiquement
     const email = `${username}@diambra.net`;
@@ -79,7 +79,6 @@ export class UsersService {
       username,
       gender: mappedGender,
       phone,
-      specialties,
       email,
       password: hashedPassword,
     });
@@ -160,13 +159,7 @@ export class UsersService {
 
     // Ajout d'alias explicites pour le frontend
     const userObj = user.toObject();
-    const enriched = {
-      ...userObj,
-      photoUrl: userObj.photo || null,
-      posterUrl: userObj.poster || null,
-      idPhotoUrl: userObj.idPhoto || null,
-    };
-    return enriched as any;
+    return userObj as any;
   }
 
   /**

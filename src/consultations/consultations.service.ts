@@ -18,6 +18,7 @@ export class ConsultationsService {
     private readonly notificationsService: NotificationsService,
     private readonly offeringsService: OfferingsService,
   ) { }
+
   private isPrivilegedConsultationRole(role: Role | undefined) {
     return role === Role.ADMIN || role === Role.SUPER_ADMIN;
   }
@@ -72,15 +73,9 @@ export class ConsultationsService {
     };
   }
 
-  private getNormalizedConsultationStatus(consultation: Partial<Consultation> & { statut?: string }) {
-    const rawStatus = String(consultation?.status || consultation?.statut || '').toUpperCase();
-
-
-    return rawStatus;
-  }
 
   private getConsultationDisplayModel(consultation: Partial<Consultation> & Record<string, any>) {
-    const normalizedStatus = this.getNormalizedConsultationStatus(consultation);
+    const normalizedStatus = " ";
     const effectiveIsPaid =
       consultation?.isPaid === true || Boolean(consultation?.paymentId);
     // Correction : ne considère comme "analysé" que si texte non vide ou status COMPLETED
@@ -93,23 +88,7 @@ export class ConsultationsService {
     let statusTone: 'amber' | 'emerald' | 'rose' | 'sky' = 'amber';
     let helperText = "Cette consultation n'est pas encore prête a etre ouverte.";
 
-    if (hasAnalysisArtifacts) {
-      state = 'ready';
-      statusLabel = 'Analyse prete';
-      statusTone = 'emerald';
-      helperText = "Ouvre l'analyse ou telecharge le PDF si disponible.";
-    } else if (normalizedStatus === 'PROCESSING' || normalizedStatus === 'GENERATING') {
-      state = 'processing';
-      statusLabel = 'Generation en cours';
-      statusTone = 'sky';
-      helperText = "Le worker traite encore cette analyse.";
-    } else if (normalizedStatus === 'FAILED' || normalizedStatus === 'ERROR') {
-      state = 'failed';
-      statusLabel = 'Generation echouee';
-      statusTone = 'rose';
-      helperText = "Ouvre la consultation pour voir l'etat ou relancer le traitement.";
-    } else if (
-      (normalizedStatus === 'ASSIGNED') &&
+    if (
       effectiveIsPaid
     ) {
       state = 'queued';
@@ -118,12 +97,6 @@ export class ConsultationsService {
       helperText = 'Le job est en attente de prise en charge par le worker.';
     }
 
-    let consultButtonStatus: 'CONSULTER' | 'REPONSE_EN_ATTENTE' | 'VOIR_L_ANALYSE' = 'CONSULTER';
-    if (hasAnalysisArtifacts) {
-      consultButtonStatus = 'VOIR_L_ANALYSE';
-    } else if (state === 'queued' || state === 'processing' || normalizedStatus === 'ASSIGNED') {
-      consultButtonStatus = 'REPONSE_EN_ATTENTE';
-    }
 
     return {
       normalizedStatus,
@@ -133,18 +106,11 @@ export class ConsultationsService {
       helperText,
       canView: state !== 'awaiting_payment',
       canDownload: Boolean(consultation?.pdfFile),
-      viewLabel:
-        state === 'ready'
-          ? "Voir l'analyse"
-          : state === 'awaiting_payment'
-            ? 'Paiement requis'
-            : "Afficher",
-      consultButtonStatus,
       effectiveIsPaid,
       requiresPayment: state === 'awaiting_payment' && !effectiveIsPaid,
       hasAnalysisArtifacts,
-      isPending: state === 'queued' || state === 'processing',
-      isCompleted: state === 'ready',
+      isPending: state === 'queued',
+      isCompleted: true,
     };
   }
 
@@ -165,7 +131,6 @@ export class ConsultationsService {
         consultationObj?.formData?.dateOfBirth || consultationObj?.formData?.dateNaissance || '',
       dateGeneration: createdAt,
       normalizedStatus: ui.normalizedStatus,
-      consultButtonStatus: ui.consultButtonStatus,
       clientDisplayName: this.getConsultationClientName(consultationObj?.formData),
       ui,
     };
@@ -181,8 +146,6 @@ export class ConsultationsService {
       _id: consultationObj?._id?.toString?.() || detailed.id,
       consultationId: detailed.consultationId,
       choiceId: consultationObj?.choiceId || null,
-      rubriqueId: consultationObj?.rubriqueId || null,
-      status: detailed.status,
       normalizedStatus: detailed.normalizedStatus,
       title: detailed.title,
       titre: detailed.titre,
@@ -191,8 +154,6 @@ export class ConsultationsService {
       updatedAt: consultationObj?.updatedAt || null,
       completedDate: detailed.completedDate || null,
       dateGeneration: detailed.dateGeneration || null,
-      analysisId: consultationObj?.analysisId || null,
-      analysisDateGeneration: consultationObj?.analysisDateGeneration || null,
       isPaid: detailed.isPaid,
       paymentId: detailed.paymentId || null,
       price: detailed.price,
@@ -200,8 +161,6 @@ export class ConsultationsService {
       clientId: client.id || consultationObj?.clientId,
       clientDisplayName: client.displayName,
       ui: detailed.ui,
-      consultButtonStatus: detailed.consultButtonStatus,
-      texte: consultationObj?.texte,
     };
   }
 
@@ -215,11 +174,6 @@ export class ConsultationsService {
     };
   }
 
-
-
-
-
-
   private buildConsultationThreadPayload(
     consultation: ConsultationDocument & { createdAt?: Date; updatedAt?: Date },
     accessRole: 'client' | 'consultant',
@@ -231,7 +185,6 @@ export class ConsultationsService {
     return {
       consultationId: consultation._id.toString(),
       accessRole,
-      status: consultation.status,
       title: consultation.title,
       description: consultation.description,
       createdAt: consultation.createdAt,
@@ -280,27 +233,7 @@ export class ConsultationsService {
 
 
 
-  private async syncConsultationCompletionFromAnalysis<T extends ConsultationDocument | null>(consultation: T): Promise<T> {
-    if (!consultation) {
-      return consultation;
-    }
 
-
-    let shouldSave = false;
-
-
-
-    if (!consultation.completedDate) {
-      shouldSave = true;
-    }
-
-    if (!shouldSave) {
-      return consultation;
-    }
-
-    await consultation.save();
-    return consultation;
-  }
 
   /**
    * Supprimer plusieurs consultations selon un filtre
@@ -359,7 +292,6 @@ export class ConsultationsService {
       choice,
       requiredOffering,
       requiredOfferingsDetails,
-      rubriqueId,
       choiceId: dtoChoiceId
     } = createConsultationDto;
 
@@ -379,7 +311,6 @@ export class ConsultationsService {
       clientId,
       title,
       description,
-      rubriqueId,
       formData: mappedFormData,
       status: status,
       price: price || 0,
@@ -463,7 +394,6 @@ export class ConsultationsService {
     // Construire le filtre
     const filter: any = {};
 
-    if (status) filter.status = status;
     if (type) filter.type = type;
     if (clientId) filter.clientId = clientId;
     if (consultantId) filter.consultantId = consultantId;
@@ -474,7 +404,6 @@ export class ConsultationsService {
       this.consultationModel
         .find(filter)
         .populate('clientId', 'firstName lastName email')
-        .populate('serviceId', 'name description price')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })
@@ -486,7 +415,7 @@ export class ConsultationsService {
     const normalizedConsultations = await Promise.all(
       consultations.map(async (consultation) => {
         // Synchronisation stricte : on force la mise à jour en base si besoin
-        const updated = await this.syncConsultationCompletionFromAnalysis(consultation);
+        const updated = consultation;
         // On recharge l'objet si modifié pour garantir la cohérence
         if (updated && updated._id && updated.isModified && typeof updated.isModified === 'function' && updated.isModified()) {
           return this.consultationModel.findById(updated._id).exec();
@@ -508,17 +437,10 @@ export class ConsultationsService {
    * Récupérer une consultation par ID
    */
   async findOne(id: string) {
-    const consultation = await this.consultationModel
-      .findById(id)
-      .populate('consultantId', 'firstName lastName email specialties rating')
-      .populate('serviceId', 'name description price duration')
-      .exec();
-
+    const consultation = await this.consultationModel.findById(id).exec();
     if (!consultation) {
       throw new NotFoundException('Consultation not found');
     }
-
-    await this.syncConsultationCompletionFromAnalysis(consultation);
     return consultation;
   }
 
@@ -549,7 +471,7 @@ export class ConsultationsService {
       throw new NotFoundException('Consultation not found');
     }
 
- 
+
 
     const consultation = await this.consultationModel
       .findByIdAndUpdate(id, updateConsultationDto, { new: true })
@@ -572,7 +494,7 @@ export class ConsultationsService {
       .findByIdAndUpdate(
         consultationId,
         {
-          consultantId 
+          consultantId
         },
         { new: true },
       )
@@ -623,7 +545,7 @@ export class ConsultationsService {
       {
         $inc: {
           totalConsultations: -1,
-          consultationsCount:   0,
+          consultationsCount: 0,
         },
       },
       { new: true }
@@ -670,7 +592,7 @@ export class ConsultationsService {
    */
   async findByClient(userId: string, query: { page?: number; limit?: number }) {
     // Utilise l'enum pour le statut
-    return this.findAll({ ...query, clientId: userId,  });
+    return this.findAll({ ...query, clientId: userId, });
   }
 
   /**
@@ -691,7 +613,7 @@ export class ConsultationsService {
 
     return Promise.all(
       consultations.map(async (consultation) => {
-        await this.syncConsultationCompletionFromAnalysis(consultation);
+
         return consultation;
       }),
     );
@@ -803,7 +725,6 @@ export class ConsultationsService {
       consultantId,
       title: consultation.title,
       description: consultation.description,
-      status: consultation.status,
       createdAt: consultationRecord.createdAt,
       updatedAt: consultationRecord.updatedAt,
       completedDate: consultation.completedDate,

@@ -6,7 +6,6 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { AdminService } from './admin.service';
-import { BatchAnalysisJobsDto, BatchAnalysisStatusesDto } from './dto/batch-analysis-jobs.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @ApiTags('Admin')
@@ -92,26 +91,8 @@ export class AdminController {
     });
     return result;
   }
-
-  @Post('consultations/analysis-jobs')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.UPDATE_ANY_CONSULTATION)
-  @ApiOperation({ summary: 'Enfiler plusieurs analyses en batch (admin)' })
-  @ApiResponse({ status: 202, description: 'Jobs d’analyse créés ou déjà présents.' })
-  async enqueueAnalysisJobs(@Body() body: BatchAnalysisJobsDto) {
-    return this.adminService.enqueueAnalysisJobs(body.consultationIds);
-  }
-
-  @Post('consultations/analysis-jobs/statuses')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.READ_ANY_CONSULTATION)
-  @ApiOperation({ summary: 'Récupérer plusieurs statuts de jobs d’analyse (admin)' })
-  @ApiResponse({ status: 200, description: 'Statuts batch retournés.' })
-  async getAnalysisJobsStatuses(@Body() body: BatchAnalysisStatusesDto) {
-    return this.adminService.getAnalysisJobsStatuses(body.consultationIds);
-  }
-
-  @Get('payments')
+ 
+ @Get('payments')
   @UseGuards(PermissionsGuard)
   @Permissions(Permission.READ_ANY_PAYMENT)
   @ApiOperation({ summary: 'Lister les paiements (admin)' })

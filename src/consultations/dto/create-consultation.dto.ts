@@ -54,7 +54,7 @@ export class RequiredOfferingDetailDto {
 
   @IsNumber()
   @Min(0)
-  price!: number; 
+  price!: number;
 
   @IsString()
   category!: string;
@@ -65,17 +65,9 @@ export class RequiredOfferingDetailDto {
 }
 
 export class CreateConsultationDto {
-  @IsString()
-  @IsOptional()
-  serviceId?: string;
-
-  @IsString()
-  @IsOptional()
-  rubriqueId?: string; // ObjectId de la rubrique, obligatoire
-
   @IsOptional()
   visible?: boolean;
-  
+
   @IsOptional()
   @IsString()
   status?: string;

@@ -1,8 +1,7 @@
 ﻿/* eslint-disable */
-import { ConsultationStatus } from '@/common/enums/consultation-status.enum';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
- 
+
 @Schema({ _id: false })
 export class ConsultationChoice {
   @Prop({ type: Object, required: true })
@@ -47,10 +46,7 @@ export class OfferingAlternative {
   price?: number;
 
   @Prop()
-  priceUSD?: number;
-
-  @Prop()
-  category?: string; 
+  category?: string;
 
   @Prop()
   description?: string;
@@ -72,9 +68,6 @@ export class RequiredOfferingDetail {
 
   @Prop({ required: true, min: 0 })
   price!: number;
-
-  @Prop({ required: true })
-  category!: string;
 
   @Prop({ required: true, min: 1 })
   quantity!: number;
@@ -105,9 +98,6 @@ export class Consultation {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Service' })
   serviceId!: MongooseSchema.Types.ObjectId;
-
-  @Prop({ type: String, enum: ConsultationStatus, default: ConsultationStatus.PENDING })
-  status!: string;
 
   @Prop({ required: true })
   title!: string;
@@ -157,10 +147,7 @@ export class Consultation {
   notes!: string;
 
   @Prop({ required: true, default: null })
-  choiceId!: string; 
-
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Rubrique', required: true })
-  rubriqueId!: MongooseSchema.Types.ObjectId;
+  choiceId!: string;
 
   @Prop({ type: String, default: null })
   country!: string;

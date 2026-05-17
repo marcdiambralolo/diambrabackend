@@ -1,10 +1,7 @@
-
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import { Role } from '../../common/enums/role.enum';
+import { Document } from 'mongoose';
 import { Permission } from '../../common/enums/permission.enum';
- import { UserType } from '../../common/enums/user-type.enum';
+import { Role } from '../../common/enums/role.enum';
 
 export type UserDocument = User & Document;
 
@@ -18,15 +15,6 @@ export class User {
 
   @Prop({ required: false, enum: ['male', 'female'] })
   gender!: string;
-
-  @Prop({ type: String, maxlength: 100 })
-  nomconsultant?: string;
-
-  @Prop({ type: Object })
-  aspectsTexte?: any;
-
-    @Prop({ type: Object })
-  aspectsTexteBrute?: any;
 
   @Prop({ trim: true })
   nom?: string; // Nom de famille
@@ -80,7 +68,6 @@ export class User {
   @Prop()
   address?: string;
 
-
   @Prop()
   profilePicture?: string;
 
@@ -124,12 +111,6 @@ export class User {
     notifications?: boolean;
     newsletter?: boolean;
   }; 
-  
-  @Prop()
-  bio?: string;
-
-  @Prop({ default: 0, min: 0, max: 5 })
-  rating?: number;
 
   @Prop({ default: 0, min: 0 })
   consultationsCount?: number;
@@ -142,56 +123,7 @@ export class User {
 
   @Prop({ default: 0 })
   consultationsCompleted?: number; // Nombre de consultations effectuées (pas seulement achetées)
-
-  @Prop({ default: 0 })
-  rituelsCompleted?: number; // Nombre de rituels/invocations réalisés
-
-  @Prop({ default: 0 })
-  booksRead?: number; // Nombre de livres lus/contenus complétés
-
-  @Prop({ type: Date })
-  lastGradeUpdate?: Date;
-
-  // Système de profils utilisateurs
-  @Prop({ type: String, enum: UserType, default: UserType.BASIQUE })
-  userType?: UserType;
-
-  @Prop({ type: Types.ObjectId, ref: 'Rubrique' })
-  premiumRubriqueId?: Types.ObjectId; // Rubrique autorisée pour Premium
-
-  @Prop({ type: Date })
-  subscriptionStartDate?: Date; // Date de début d'abonnement Premium/Intégral
-
-  @Prop({ type: Date })
-  subscriptionEndDate?: Date; // Date de fin d'abonnement Premium/Intégral
-
-  @Prop({ type: String, maxlength: 255 })
-  photo?: string; // URL or path to profile photo
-
-  @Prop({ type: String, maxlength: 100 })
-  spiritualName?: string;
-
-  @Prop({ type: String, maxlength: 255 })
-  spiritualQuote?: string;
-
-  @Prop({ type: String, maxlength: 1000 })
-  presentation?: string;
-
-  @Prop({ type: [String], default: [] })
-  specialties?: string[];
-
-  @Prop({ type: String, maxlength: 200 })
-  specialtyOther?: string;
-
-  @Prop({ type: [String], default: [] })
-  methods?: string[];
-  
-  @Prop({ type: [String], default: [] })
-  domains?: string[];
-
-  @Prop({ type: Number, min: 0 })
-  experienceYears?: number;
-
+ 
   @Prop({ type: String, maxlength: 500 })
   message?: string;
 
@@ -208,27 +140,11 @@ export class User {
   city?: string;
 
   @Prop({ type: String, maxlength: 255 })
-  idPhoto?: string; // URL or path to ID photo
-
-  @Prop({ type: String, maxlength: 255 })
-  poster?: string; // URL or path to poster image
-
-  @Prop({ type: Boolean, default: false })
-  ethical?: boolean;
-
-  @Prop({ type: String, maxlength: 255 })
-  videoLink?: string;
+  idPhoto?: string; // URL or path to ID photo  
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Indexes supplémentaires pour optimiser les requêtes fréquentes
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ createdAt: -1 });
-UserSchema.index({ emailVerified: 1 });
-UserSchema.index({ specialties: 1 });
-UserSchema.index({ rating: -1 });
-UserSchema.index({ grade: 1 });
-UserSchema.index({ userType: 1 });
-UserSchema.index({ subscriptionEndDate: 1 });

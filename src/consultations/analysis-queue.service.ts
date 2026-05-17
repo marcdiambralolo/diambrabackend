@@ -115,5 +115,4 @@ export class AnalysisQueueService implements OnApplicationShutdown {
 
     return this.queue;
   }
-
 }

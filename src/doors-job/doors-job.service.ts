@@ -1,7 +1,3 @@
-  /**
-   * Supprime tous les jobs de la queue (pour tests/dev)
-   */
-
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';

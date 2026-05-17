@@ -11,7 +11,6 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
- import { ConsultationStatus } from '../common/enums/consultation-status.enum';
 import { PaymentMethod, PaymentStatus } from '../common/enums/payment-status.enum';
 import { AnalysisQueueService } from '../consultations/analysis-queue.service';
 import { ConsultationsService } from '../consultations/consultations.service';
@@ -909,7 +908,6 @@ export class PaymentsService {
       }
 
       await this.consultationsService.update(consultationId, {
-        status: ConsultationStatus.PENDING,
         isPaid: true,
         paymentId: payment._id,
       } as any);

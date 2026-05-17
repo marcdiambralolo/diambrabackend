@@ -1,15 +1,7 @@
-import { IsEnum, IsMongoId, IsOptional, IsDateString } from 'class-validator';
-import { UserType } from '../../common/enums/user-type.enum';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsDateString, IsMongoId, IsOptional } from 'class-validator';
 
 export class UpdateUserTypeDto {
-  @ApiProperty({
-    enum: UserType,
-    description: 'Type de profil utilisateur',
-  })
-  @IsEnum(UserType)
-  userType!: UserType;
-
   @ApiProperty({
     description: 'ID de la rubrique autorisée (uniquement pour Premium)',
     required: false,
@@ -36,9 +28,6 @@ export class UpdateUserTypeDto {
 }
 
 export class UserTypeResponseDto {
-  @ApiProperty()
-  userType!: UserType;
-
   @ApiProperty({ required: false })
   premiumRubriqueId?: string;
 
