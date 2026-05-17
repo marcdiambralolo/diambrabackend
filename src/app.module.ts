@@ -21,7 +21,6 @@ import { OfferingStockModule } from './offerings/offering-stock.module';
 import { OfferingsModule } from './offerings/offerings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { RedisModule } from './redis/redis.module';
-import { RubriqueModule } from './rubriques/rubrique.module';
 import { ServicesModule } from './services/services.module';
 import { UploadModule } from './uploads/upload.module';
  import { UsersModule } from './users/users.module';
@@ -82,7 +81,6 @@ import { WalletModule } from './wallet/wallet.module';
     WalletModule,
     OfferingsModule,
     OfferingStockModule,
-    RubriqueModule,
     UploadModule, 
     RedisModule,
     MessagingModule,

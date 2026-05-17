@@ -9,14 +9,7 @@ import { ConsultationChoiceService } from './consultation-choice.service';
 export class ConsultationChoiceController {
 
   constructor(private readonly consultationChoiceService: ConsultationChoiceService) { }
-
-  @Get('from-rubriques/:id')
-  @ApiOperation({ summary: 'Trouver un choix de consultation par id dans toutes les rubriques' })
-  @ApiResponse({ status: 200, description: 'Choix de consultation trouvé dans une rubrique.' })
-  async getChoiceFromRubriques(@Param('id') id: string) {
-    return this.consultationChoiceService.findChoiceInRubriquesById(id);
-  }
-
+ 
 
   @Get(':id/raw')
   async getChoiceByIdRaw(@Param('id') id: string) {

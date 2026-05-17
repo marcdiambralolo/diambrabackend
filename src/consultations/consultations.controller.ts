@@ -21,7 +21,6 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { UserDocument } from '../users/schemas/user.schema';
 import { ConsultationsService } from './consultations.service';
-import { SendConsultationMessageDto } from './dto/send-consultation-message.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
 
 @ApiTags('Consultations')
@@ -93,30 +92,7 @@ export class ConsultationsController {
   }
 
 
-  /**
-   * GET /consultations/thread/consultant/:consultantId
-   * Récupérer le fil de conversation du client connecté avec un consultant
-   */
-  @Get('thread/consultant/:consultantId')
-  async getClientThreadByConsultant(
-    @Param('consultantId') consultantId: string,
-    @CurrentUser() user: UserDocument,
-  ) {
-    return this.consultationsService.getClientThreadByConsultant(user, consultantId);
-  }
-
-  /**
-   * POST /consultations/thread/consultant/:consultantId/messages
-   * Envoyer un message client à un consultant sur la consultation la plus récente
-   */
-  @Post('thread/consultant/:consultantId/messages')
-  sendClientMessageByConsultant(
-    @Param('consultantId') consultantId: string,
-    @CurrentUser() user: UserDocument,
-    @Body() dto: SendConsultationMessageDto,
-  ) {
-    return this.consultationsService.addClientMessageByConsultant(consultantId, user, dto);
-  }
+   
 
   /**
    * GET /consultations/user/:userId
@@ -181,34 +157,7 @@ export class ConsultationsController {
     };
   }
 
-  /**
-   * POST /consultations/:id/messages
-   * Envoyer un message consultant sur une consultation assignée
-   */
-  @Post(':id/messages')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.UPDATE_ANY_CONSULTATION)
-  sendConsultationMessage(
-    @Param('id') id: string,
-    @Body() dto: SendConsultationMessageDto,
-    @CurrentUser() user: UserDocument,
-  ) {
-    return this.consultationsService.addConsultantMessage(id, user, dto);
-  }
-
-  /**
-   * GET /consultations/:id/messages
-   * Récupérer le fil de messages d'une consultation pour le consultant connecté
-   */
-  @Get(':id/messages')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.READ_ANY_CONSULTATION)
-  getConsultationMessages(
-    @Param('id') id: string,
-    @CurrentUser() user: UserDocument,
-  ) {
-    return this.consultationsService.getConsultationThreadForUser(id, user);
-  }
+  
 
   /**
    * GET /consultations/:id/front-data
@@ -220,13 +169,11 @@ export class ConsultationsController {
     @CurrentUser() user: UserDocument,
   ) {
     const { consultation } = await this.consultationsService.findOneForUser(id, user);
-    const messaging = await this.consultationsService.getConsultationThreadForUser(id, user);
-
+ 
     return {
       success: true,
       consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
-      messaging,
-    };
+     };
   }
 
   /**
@@ -295,23 +242,7 @@ export class ConsultationsController {
     }));
   }
 
-  /**
-   * PATCH /consultations/:id/assign/:consultantId
-   * Attribuer une consultation à un consultant (admin only)
-   */
-  @Patch(':id/assign/:consultantId')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.ASSIGN_CONSULTATION)
-  assignToConsultant(
-    @Param('id') id: string,
-    @Param('consultantId') consultantId: string,
-  ) {
-    return this.consultationsService.assignToConsultant(id, consultantId).then((consultation) => ({
-      success: true,
-      consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
-    }));
-  }
-
+   
   /**
    * DELETE /consultations/:id
    * Supprimer une consultation
