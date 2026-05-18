@@ -230,9 +230,6 @@ export class ConsultationsController {
    */
   @Put(':id')
   updatePut(@Param('id') id: string, @Body() updateConsultationDto: any) {
-    console.log('Received PATCH request for id:', id);
-    console.log('Received body:', updateConsultationDto);
-
     return this.consultationsService.update(id, updateConsultationDto).then((consultation) => ({
       success: true,
       consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
