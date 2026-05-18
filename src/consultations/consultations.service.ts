@@ -6,7 +6,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { OfferingsService } from '../offerings/offerings.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
-import { UpdateConsultationDto } from './dto/update-consultation.dto';
 import { Consultation, ConsultationDocument } from './schemas/consultation.schema';
 
 @Injectable()
@@ -135,6 +134,8 @@ export class ConsultationsService {
       normalizedStatus: detailed.normalizedStatus,
       title: detailed.title,
       titre: detailed.titre,
+      combinaison: consultationObj?.combinaison || '',
+      timeSpent: consultationObj?.timeSpent,
       createdAt: consultationObj?.createdAt || null,
       updatedAt: consultationObj?.updatedAt || null,
       paymentId: detailed.paymentId || null,
@@ -308,14 +309,14 @@ export class ConsultationsService {
   /**
    * Mettre à jour une consultation
    */
-  async update(id: string, updateConsultationDto: UpdateConsultationDto) {
+  async update(id: string, updateConsultationDto: any) {
     const currentConsultation = await this.consultationModel.findById(id).exec();
 
     if (!currentConsultation) {
       throw new NotFoundException('Consultation not found');
     }
     const consultation = await this.consultationModel
-      .findByIdAndUpdate(id, updateConsultationDto, { new: true })
+      .findByIdAndUpdate(id, updateConsultationDto)
       .populate('clientId', 'firstName lastName email')
       .exec();
 
@@ -326,10 +327,7 @@ export class ConsultationsService {
     return consultation;
   }
 
-   
-  /**
-   * Supprimer une consultation
-   */
+
   async remove(id: string, userId: string, userRole: Role) {
     const consultation = await this.consultationModel.findById(id).exec();
 

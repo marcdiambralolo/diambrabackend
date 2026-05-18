@@ -5,5 +5,8 @@ import { CreateConsultationDto } from './create-consultation.dto';
 export class UpdateConsultationDto extends PartialType(CreateConsultationDto) {
   @IsOptional()
   @IsString()
-  result?: string;
+  timeSpent?: string;
+  @IsOptional()
+  @IsString()
+  combinaison?: string;
 }

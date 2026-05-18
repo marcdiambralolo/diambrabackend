@@ -229,7 +229,10 @@ export class ConsultationsController {
    * Mettre à jour une consultation (alternative PUT)
    */
   @Put(':id')
-  updatePut(@Param('id') id: string, @Body() updateConsultationDto: UpdateConsultationDto) {
+  updatePut(@Param('id') id: string, @Body() updateConsultationDto: any) {
+    console.log('Received PATCH request for id:', id);
+    console.log('Received body:', updateConsultationDto);
+
     return this.consultationsService.update(id, updateConsultationDto).then((consultation) => ({
       success: true,
       consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),

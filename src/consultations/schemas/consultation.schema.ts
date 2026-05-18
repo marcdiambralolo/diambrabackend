@@ -12,6 +12,12 @@ export class Consultation {
   @Prop({ required: true })
   title!: string;
 
+  @Prop({ required: false })
+  timeSpent!: string;
+
+  @Prop({ required: false })
+  combinaison!: string;
+
   @Prop({ type: Object, default: {} })
   formData!: {
     [key: string]: any;
