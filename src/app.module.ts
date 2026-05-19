@@ -25,6 +25,8 @@ import { UploadModule } from './uploads/upload.module';
  import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 
+import { GameConfigurationModule } from './game/game-configuration.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -83,6 +85,7 @@ import { WalletModule } from './wallet/wallet.module';
     UploadModule, 
     RedisModule,
     DoorsJobModule,
+    GameConfigurationModule,
   ],
   controllers: [AppController, DoorsJobController],
   providers: [
