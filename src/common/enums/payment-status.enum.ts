@@ -18,7 +18,7 @@ export enum PaymentMethod {
   DEBIT_CARD = 'DEBIT_CARD',
   STRIPE = 'STRIPE',
   PAYPAL = 'PAYPAL',
-  MOBILE_MONEY = 'MOBILE_MONEY', // Pour l'Afrique (Orange Money, MTN, etc.)
+  MOBILE_MONEY = 'MOBILE_MONEY',
   BANK_TRANSFER = 'BANK_TRANSFER',
   CASH = 'CASH',
   MONEYFUSION = 'MONEYFUSION',

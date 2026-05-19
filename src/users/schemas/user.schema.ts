@@ -68,9 +68,6 @@ export class User {
   @Prop()
   address?: string;
 
-  @Prop()
-  profilePicture?: string;
-
   @Prop({ default: true })
   isActive?: boolean;
 
@@ -138,9 +135,6 @@ export class User {
 
   @Prop({ type: String, maxlength: 100 })
   city?: string;
-
-  @Prop({ type: String, maxlength: 255 })
-  idPhoto?: string; // URL or path to ID photo  
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

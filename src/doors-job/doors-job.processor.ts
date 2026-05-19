@@ -24,19 +24,18 @@ export class DoorsJobProcessor extends WorkerHost {
     }
     this.logger.log(`Processing user doors job for user ${userId}`);
     console.log('[DoorsJobProcessor] Début process pour user:', userId);
-    // 1. Update user profile
- 
+
     try {
       console.log('[DoorsJobProcessor] [STEP 1] Mise à jour profil utilisateur', { userId, formData });
       await this.usersService.update(userId, formData);
-      job.updateProgress(20);
+      job.updateProgress(50);
       console.log('[DoorsJobProcessor] [STEP 1] Profil utilisateur mis à jour');
     } catch (err) {
       this.logger.error('[STEP 1] Erreur update user:', err);
       console.error('[DoorsJobProcessor] [STEP 1] Erreur update user:', err, { userId, formData });
       throw new Error('[STEP 1] Erreur update user: ' + (typeof err === 'object' && err && 'message' in err ? (err as any).message : String(err)));
     }
- 
+
     job.updateProgress(100);
     return { success: true, consultations: [] };
   }

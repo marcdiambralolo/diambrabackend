@@ -79,20 +79,18 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Liste paginée des consultations' })
   async getConsultations(
     @Query('search') search?: string,
-    @Query('status') status?: string,
-    @Query('type') type?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '18',
   ) {
     const result = await this.adminService.getConsultations({
-      search, status, type,
+      search,
       page: parseInt(page as string, 10) || 1,
       limit: parseInt(limit as string, 10) || 18,
     });
     return result;
   }
- 
- @Get('payments')
+
+  @Get('payments')
   @UseGuards(PermissionsGuard)
   @Permissions(Permission.READ_ANY_PAYMENT)
   @ApiOperation({ summary: 'Lister les paiements (admin)' })

@@ -12,9 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 import { PaymentMethod, PaymentStatus } from '../common/enums/payment-status.enum';
-import { AnalysisQueueService } from '../consultations/analysis-queue.service';
 import { ConsultationsService } from '../consultations/consultations.service';
-import { BirthData } from '../consultations/deepseek.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -60,9 +58,8 @@ export class PaymentsService {
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private readonly httpService: HttpService,
-    private readonly analysisQueueService: AnalysisQueueService,
     private readonly consultationsService: ConsultationsService,
-  ) {}
+  ) { }
 
   // ==================== VALIDATION METHODS ====================
 
@@ -72,9 +69,9 @@ export class PaymentsService {
     }
   }
 
-    /**
-   * Initie un paiement MoneyFusion, stocke le tokenPay, retourne l'URL de paiement
-   */
+  /**
+ * Initie un paiement MoneyFusion, stocke le tokenPay, retourne l'URL de paiement
+ */
   async initiateMoneyfusionPayment(payload: {
     countryCode: string;
     phone: string;
@@ -157,70 +154,6 @@ export class PaymentsService {
     return firstEntry && typeof firstEntry === 'object' ? (firstEntry as PaymentPersonalInfo) : {};
   }
 
-  private normalizeDateInput(dateValue: any): string {
-    if (!dateValue) {
-      return '';
-    }
-
-    if (dateValue instanceof Date) {
-      return dateValue.toISOString().split('T')[0];
-    }
-
-    return dateValue.toString();
-  }
-
-  private buildBirthDataFromConsultation(consultation: any, personalInfo: any): BirthData {
-    const formData = consultation?.formData || {};
-
-    return {
-      nom: formData.lastName || personalInfo?.lastName || personalInfo?.nom || 'Client',
-      prenoms: formData.firstName || personalInfo?.firstName || personalInfo?.prenoms || 'Client',
-      gender:
-        formData.gender ||
-        formData.sexe ||
-        personalInfo?.gender || 
-        'male',
-      dateNaissance: this.normalizeDateInput(
-        formData.dateOfBirth || personalInfo?.dateNaissance || personalInfo?.dateOfBirth,
-      ),
-      heureNaissance:
-        formData.timeOfBirth ||
-        formData.hourOfBirth ||
-        formData.heureNaissance ||
-        personalInfo?.heureNaissance ||
-        personalInfo?.timeOfBirth ||
-        '',
-      paysNaissance:
-        formData.countryOfBirth ||
-        formData.paysNaissance ||
-        personalInfo?.paysNaissance ||
-        personalInfo?.countryOfBirth ||
-        personalInfo?.pays ||
-        '',
-        country: formData.country || personalInfo?.country || personalInfo?.pays || '', 
-      villeNaissance:
-        formData.cityOfBirth ||
-        formData.villeNaissance ||
-        personalInfo?.villeNaissance ||
-        personalInfo?.cityOfBirth ||
-        personalInfo?.ville ||        '' 
-    };
-  }
-
-  private getMissingBirthFields(birthData: BirthData): string[] {
-    const required: Array<keyof BirthData> = [
-      'nom',
-      'prenoms',
-      'dateNaissance',
-      'heureNaissance',
-      'paysNaissance',
-      'villeNaissance',
-    ];
-
-    return required.filter(
-      (field) => !birthData[field] || birthData[field].toString().trim() === '',
-    );
-  }
 
   private extractPaymentContext(payment: PaymentDocument | null | undefined) {
     const metadata = payment?.metadata || {};
@@ -282,12 +215,12 @@ export class PaymentsService {
     // Créer le paiement (consultation ou livre)
 
     if (type === 'book' && personalInfo.bookId) {
-     
+
       return {
         success: true,
         status: 'paid',
         bookId: personalInfo.bookId,
-         message: 'Paiement du livre traité avec succès',
+        message: 'Paiement du livre traité avec succès',
       };
     }
 
@@ -488,13 +421,13 @@ export class PaymentsService {
         paymentData.personal_Info.length > 0 &&
         paymentData.personal_Info[0].productType === 'ebook_pdf';
 
- 
+
 
       if (isBookPurchase) {
         // Enregistrer l'achat du livre
         const bookInfo = paymentData.personal_Info[0];
         try {
-         
+
           this.logger.log(`Achat de livre enregistré: ${bookInfo.bookId}`);
         } catch (bookError) {
           this.logger.error('Erreur enregistrement achat livre:', bookError);
@@ -522,7 +455,7 @@ export class PaymentsService {
           : 'Paiement enregistré avec succès',
         payment: payment[0],
         credits: updatedUser ? updatedUser.credits : undefined,
- 
+
       };
     } catch (error) {
       await session.abortTransaction();
@@ -556,7 +489,7 @@ export class PaymentsService {
     this.logger.log(`Webhook MoneyFusion reçu: ${token}`);
 
     const session = await this.paymentModel.startSession();
-  let sessionTransferred = false;
+    let sessionTransferred = false;
     session.startTransaction();
 
     try {
@@ -583,14 +516,7 @@ export class PaymentsService {
         return this.processConsultationPayment(token, paymentData);
       }
 
-      if (paymentType === 'book') {
-        await session.abortTransaction();
-        sessionTransferred = true;
-        session.endSession();
-        return this.processBookPayment(token, paymentData);
-      }
 
-      // Trouver l'utilisateur
       const user = await this.userModel
         .findOne({
           $or: [{ phone: paymentData.numeroSend }, { email: paymentData.email }],
@@ -649,8 +575,6 @@ export class PaymentsService {
       }
     }
   }
-
-  // ==================== STANDARD PAYMENT METHODS ====================
 
   /**
    * Créer un paiement standard
@@ -820,15 +744,15 @@ export class PaymentsService {
         message: verification.message,
         data: verification.payment
           ? {
-              _id: verification.payment._id,
-              amount: verification.payment.amount,
-              status: verification.payment.status,
-              method: verification.payment.method,
-              reference: verification.payment.transactionId || verification.payment.moneyFusionToken,
-              consultationId: context.consultationId,
-              bookId: context.bookId,
-              paymentType: context.paymentType,
-            }
+            _id: verification.payment._id,
+            amount: verification.payment.amount,
+            status: verification.payment.status,
+            method: verification.payment.method,
+            reference: verification.payment.transactionId || verification.payment.moneyFusionToken,
+            consultationId: context.consultationId,
+            bookId: context.bookId,
+            paymentType: context.paymentType,
+          }
           : null,
       };
     } catch (error: any) {
@@ -896,23 +820,11 @@ export class PaymentsService {
         method: PaymentMethod.MONEYFUSION,
       });
 
-      const birthData = this.buildBirthDataFromConsultation(consultation, personalInfo);
-      const missingFields = this.getMissingBirthFields(birthData);
-
-      if (missingFields.length > 0) {
-        return {
-          success: false,
-          status: 'error',
-          message: `Informations de naissance manquantes: ${missingFields.join(', ')}`,
-        };
-      }
-
       await this.consultationsService.update(consultationId, {
         isPaid: true,
         paymentId: payment._id,
       } as any);
 
-      const job = await this.analysisQueueService.enqueueAnalysis(consultationId);
 
       this.logger.log(`📊 Consultation payée et job d'analyse créé: ${consultationId}`);
 
@@ -925,87 +837,10 @@ export class PaymentsService {
           paymentId: payment._id.toString(),
           amount: payment.amount,
           reference: transactionId,
-          analysisJob: job,
         },
       };
     } catch (error: any) {
       this.logger.error(`❌ Erreur traitement consultation: ${error.message}`);
-      return {
-        success: false,
-        status: 'error',
-        message: error.message || 'Erreur de traitement',
-      };
-    }
-  }
-
-  /**
-   * Traiter un paiement de livre
-   * Enregistre l'achat et génère le lien de téléchargement
-   */
-  async processBookPayment(token: string, paymentData: ProcessPaymentPayload) {
-    this.validateToken(token);
-
-    try {
-      // Vérifier le paiement
-      const verification = await this.verifyMoneyfusionPayment(token);
-      if (!verification.payment || !['success', 'already_used'].includes(verification.status)) {
-        return {
-          success: false,
-          status: verification.status,
-          message: verification.message,
-        };
-      }
-
-      const payment = verification.payment;
-      const mergedPaymentData = paymentData || payment.metadata || {};
-      const personalInfo = this.extractPersonalInfo(mergedPaymentData);
-
-      if (!personalInfo || !personalInfo.bookId) {
-        throw new BadRequestException('ID du livre manquant');
-      }
-
-      const bookId = personalInfo.bookId;
-      const userId = personalInfo.userId || payment.userId?.toString();
-      const transactionReference = payment.transactionId || payment.metadata?.tokenPay || payment.metadata?.reference || token;
-
-      if (verification.status === 'already_used') {
-        const downloadToken = Buffer.from(`${bookId}:${token}`).toString('base64');
-        return {
-          success: true,
-          status: 'already_used',
-          bookId,
-          downloadUrl: `/api/v1/books/${bookId}/download?token=${downloadToken}`,
-          message: verification.message || 'Paiement déjà traité',
-          data: {
-            paymentId: payment._id.toString(),
-            amount: payment.amount,
-            reference: transactionReference,
-          },
-        };
-      }
-
-      this.logger.log(`📚 Traitement achat livre: ${bookId} pour utilisateur: ${userId}`);
-
-      
-
-      // Générer le token de téléchargement sécurisé
-      const downloadToken = Buffer.from(`${bookId}:${token}`).toString('base64');
-      const downloadUrl = `/api/v1/books/${bookId}/download?token=${downloadToken}`;
-
-      return {
-        success: true,
-        status: 'paid',
-        bookId,
-        downloadUrl,
-        message: 'Paiement du livre traité avec succès',
-        data: {
-          paymentId: payment._id.toString(),
-          amount: payment.amount,
-          reference: transactionReference,
-        },
-      };
-    } catch (error: any) {
-      this.logger.error(`❌ Erreur traitement livre: ${error.message}`);
       return {
         success: false,
         status: 'error',

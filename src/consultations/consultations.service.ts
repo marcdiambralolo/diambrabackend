@@ -2,8 +2,6 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Role } from '../common/enums/role.enum';
-import { NotificationsService } from '../notifications/notifications.service';
-import { OfferingsService } from '../offerings/offerings.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { Consultation, ConsultationDocument } from './schemas/consultation.schema';
@@ -13,8 +11,6 @@ export class ConsultationsService {
   constructor(
     @InjectModel(Consultation.name) private consultationModel: Model<ConsultationDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private readonly notificationsService: NotificationsService,
-    private readonly offeringsService: OfferingsService,
   ) { }
 
   private isPrivilegedConsultationRole(role: Role | undefined) {
@@ -45,28 +41,18 @@ export class ConsultationsService {
     return consultation;
   }
 
-  private getConsultationClientName(formData: Record<string, any> | null | undefined) {
-    const firstName = formData?.firstName || formData?.prenoms || '';
-    const lastName = formData?.lastName || formData?.nom || '';
-    return `${firstName} ${lastName}`.trim();
-  }
-
   private serializeConsultationClient(consultation: Record<string, any>) {
     const populatedClient = consultation?.clientId && typeof consultation.clientId === 'object'
       ? consultation.clientId
       : null;
-    const formData = consultation?.formData || {};
-    const displayName = this.getConsultationClientName(formData)
-      || populatedClient?.username
-      || populatedClient?.email
-      || '';
+    const displayName = populatedClient?.username || populatedClient?.email || '';
 
     return {
       id: populatedClient?._id?.toString?.() || consultation?.clientId?.toString?.() || '',
-      email: populatedClient?.email || formData?.email || '',
-      username: populatedClient?.username || formData?.username || '',
-      firstName: formData?.firstName || formData?.prenoms || populatedClient?.firstName || '',
-      lastName: formData?.lastName || formData?.nom || populatedClient?.lastName || '',
+      email: populatedClient?.email || '',
+      username: populatedClient?.username || '',
+      firstName: populatedClient?.firstName || '',
+      lastName: populatedClient?.lastName || '',
       displayName,
     };
   }
@@ -74,27 +60,17 @@ export class ConsultationsService {
   private getConsultationDisplayModel(consultation: Partial<Consultation> & Record<string, any>) {
     const normalizedStatus = " ";
     const effectiveIsPaid = Boolean(consultation?.paymentId);
-    // Correction : ne considère comme "analysé" que si texte non vide ou status COMPLETED
-    const hasAnalysisArtifacts = (
-      (typeof consultation?.texte === 'string' && consultation.texte.trim().length > 0)
-    );
-
-    const state: 'ready' | 'queued' | 'processing' | 'failed' | 'awaiting_payment' = 'awaiting_payment';
     const statusLabel = 'Paiement requis';
     const statusTone: 'amber' | 'emerald' | 'rose' | 'sky' = 'amber';
     const helperText = "Cette consultation n'est pas encore prête";
 
     return {
       normalizedStatus,
-      state,
       statusLabel,
       statusTone,
       helperText,
-      canView: state !== 'awaiting_payment',
-      canDownload: Boolean(consultation?.pdfFile),
       effectiveIsPaid,
-      requiresPayment: state === 'awaiting_payment' && !effectiveIsPaid,
-      hasAnalysisArtifacts,
+      requiresPayment: !effectiveIsPaid,
       isPending: true,
       isCompleted: true,
     };
@@ -104,20 +80,13 @@ export class ConsultationsService {
     const consultationObj = this.toPlainConsultation(consultation);
     const ui = this.getConsultationDisplayModel(consultationObj);
     const id = consultationObj?._id?.toString?.() || consultationObj?.id?.toString?.() || '';
-    const createdAt = consultationObj?.createdAt || consultationObj?.dateGeneration || null;
 
     return {
       ...consultationObj,
       id,
       consultationId: consultationObj?.consultationId || id,
       titre: consultationObj?.title || consultationObj?.titre || '',
-      prenoms: consultationObj?.formData?.firstName || consultationObj?.formData?.prenoms || '',
-      nom: consultationObj?.formData?.lastName || consultationObj?.formData?.nom || '',
-      dateNaissance:
-        consultationObj?.formData?.dateOfBirth || consultationObj?.formData?.dateNaissance || '',
-      dateGeneration: createdAt,
       normalizedStatus: ui.normalizedStatus,
-      clientDisplayName: this.getConsultationClientName(consultationObj?.formData),
       ui,
     };
   }
@@ -139,7 +108,6 @@ export class ConsultationsService {
       createdAt: consultationObj?.createdAt || null,
       updatedAt: consultationObj?.updatedAt || null,
       paymentId: detailed.paymentId || null,
-      price: detailed.price,
       client,
       clientId: client.id || consultationObj?.clientId,
       clientDisplayName: client.displayName,
@@ -147,58 +115,20 @@ export class ConsultationsService {
     };
   }
 
-
   async deleteMany(filter: any): Promise<{ deletedCount: number }> {
     const result = await this.consultationModel.deleteMany(filter).exec();
     return { deletedCount: result.deletedCount || 0 };
-  }
-
-
-  async populateAlternatives(alternatives: any[] = []) {
-    if (!alternatives.length) return [];
-    // Filtrer les offeringIds valides et uniques
-    const offeringIds = Array.from(new Set(
-      alternatives
-        .map(a => a.offeringId)
-        .filter(id => id !== null && id !== undefined)
-        .map(id => id?.toString())
-    ));
-    const offerings = await this.offeringsService.findByIds(offeringIds);
-
-    // Fusionner chaque alternative avec ses données d'offrande au niveau racine
-    const enrichedAlternatives = alternatives.map(alt => {
-      const altId = alt.offeringId?.toString();
-      const found = offerings.find(o => {
-        const offerId = o._id?.toString() || o.id?.toString();
-        return offerId === altId;
-      });
-      return found
-        ? {
-          ...alt, // conserve offeringId et quantity
-          name: found.name,
-          price: found.price,
-        }
-        : alt;
-    });
-    return enrichedAlternatives;
   }
 
   /**
    * Créer une nouvelle consultation
    */
   async create(clientId: string, createConsultationDto: CreateConsultationDto) {
-    const {
-      title,
-      price,
-      formData,
-    } = createConsultationDto;
+    const { title, } = createConsultationDto;
 
-    const mappedFormData = formData || {};
     const consultation = new this.consultationModel({
       clientId,
       title,
-      formData: mappedFormData,
-      price: price || 0,
       isPaid: true,
       country: "Cote d'ivoire",
     });
@@ -224,31 +154,21 @@ export class ConsultationsService {
     };
   }
 
-
   async findAll(query: {
     page?: number;
     limit?: number;
-    type?: string;
     clientId?: string;
-    consultantId?: string;
-    rubriqueId?: string;
   }) {
-    const { page = 1, limit = 10, type, clientId, consultantId, rubriqueId } = query;
+    const { page = 1, limit = 10, clientId, } = query;
     const skip = (page - 1) * limit;
 
-    // Construire le filtre
     const filter: any = {};
-
-    if (type) filter.type = type;
     if (clientId) filter.clientId = clientId;
-    if (consultantId) filter.consultantId = consultantId;
-    if (rubriqueId) filter.rubriqueId = rubriqueId;
 
-    // Récupérer les consultations
     const [consultations, total] = await Promise.all([
       this.consultationModel
         .find(filter)
-        .populate('clientId', 'firstName lastName email')
+        .populate('clientId', 'username firstName lastName')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })
@@ -317,7 +237,7 @@ export class ConsultationsService {
     }
     const consultation = await this.consultationModel
       .findByIdAndUpdate(id, updateConsultationDto)
-      .populate('clientId', 'firstName lastName email')
+      .populate('clientId', 'username firstName lastName email')
       .exec();
 
     if (!consultation) {
@@ -408,5 +328,4 @@ export class ConsultationsService {
 
     return consultations;
   }
-
 }

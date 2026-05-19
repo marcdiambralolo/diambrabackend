@@ -490,37 +490,4 @@ export class PaymentsController {
   async processConsultationPayment(@Body() body: ProcessPaymentDto) {
     return this.paymentsService.processConsultationPayment(body.token, body.paymentData);
   }
-
-  /**
-   * Traiter le paiement d'un livre
-   * POST /api/v1/payments/process-book
-   * Body: { token, paymentData }
-   */
-  @Post('process-book')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: "Traiter le paiement d'un livre",
-    description: "Vérifie le paiement, enregistre l'achat et génère le lien de téléchargement.",
-  })
-  @ApiBody({
-    schema: {
-      properties: {
-        token: { type: 'string', example: 'abc123def456' },
-        paymentData: { type: 'object' },
-      },
-      required: ['token', 'paymentData'],
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Achat enregistré et lien de téléchargement généré.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Données invalides ou paiement non valide.',
-  })
-  async processBookPayment(@Body() body: ProcessPaymentDto) {
-    return this.paymentsService.processBookPayment(body.token, body.paymentData);
-  }
 }

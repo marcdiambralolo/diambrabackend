@@ -62,7 +62,7 @@ async function bootstrap() {
     const redisPublisher = new Redis({
       host: configService.get<string>('REDIS_HOST', '127.0.0.1'),
       port: configService.get<number>('REDIS_PORT', 6379),
-     });
+    });
 
     // Correction robustesse: toujours un entier > 0
     let concurrencyValue = configService.get('ANALYSIS_WORKER_CONCURRENCY');
@@ -85,13 +85,13 @@ async function bootstrap() {
         }
 
         console.log('[DEBUG][worker] markProcessing...');
- 
+
         try {
           console.log('[analysis-worker] Lancement generateAnalysis pour', job.data.consultationId);
-          const result =null;
+          const result = null;
           console.log('[analysis-worker] Résultat generateAnalysis:', result);
- 
-           setTimeout(() => {
+
+          setTimeout(() => {
             redisPublisher.publish('analysis-status', JSON.stringify({
               consultationId: job.data.consultationId,
               status: 'COMPLETED',
@@ -104,7 +104,7 @@ async function bootstrap() {
             consultationId: job.data.consultationId,
             error,
           });
-          
+
           throw error;
         }
       },

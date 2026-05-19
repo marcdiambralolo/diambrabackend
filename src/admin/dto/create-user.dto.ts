@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsEnum, IsObject, MinLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 
 export enum Gender {
   MALE = 'male',
@@ -33,10 +33,4 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean = true;
-
-  @IsOptional()
-  @IsObject()
-  preferences?: {
-    notifications?: boolean;
-  };
 }

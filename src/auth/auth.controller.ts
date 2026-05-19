@@ -13,7 +13,7 @@ import { RegisterDto } from './dto/register.dto';
 @ApiTags('Authentification')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {} 
+  constructor(private readonly authService: AuthService) { }
 
   @Public()
   @Post('register')
@@ -26,7 +26,7 @@ export class AuthController {
   ) {
     return this.authService.register(registerDto, response);
   }
- 
+
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -39,10 +39,10 @@ export class AuthController {
     return this.authService.login(loginDto, response);
   }
 
-   /**
-   * POST /auth/refresh
-   * Rafraîchir le token d'accès
-   */
+  /**
+  * POST /auth/refresh
+  * Rafraîchir le token d'accès
+  */
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)

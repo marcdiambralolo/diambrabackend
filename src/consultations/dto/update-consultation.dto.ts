@@ -6,6 +6,7 @@ export class UpdateConsultationDto extends PartialType(CreateConsultationDto) {
   @IsOptional()
   @IsString()
   timeSpent?: string;
+  
   @IsOptional()
   @IsString()
   combinaison?: string;

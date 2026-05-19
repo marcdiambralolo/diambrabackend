@@ -395,8 +395,8 @@ export class AdminService {
       this.consultationModel.countDocuments(filter).exec(),
       this.consultationModel
         .find(filter)
-        .select('_id title description combinaison timeSpent status type price createdAt clientId consultantId formData.nom formData.prenoms formData.phone analysisNotified completedDate')
-        .populate('clientId', 'username firstName lastName phone email')
+        .select('_id combinaison timeSpent createdAt clientId')
+        .populate('clientId', 'username firstName lastName phone')
         .collation({ locale: 'fr' })
         .sort({ createdAt: -1 })
         .skip(skip)

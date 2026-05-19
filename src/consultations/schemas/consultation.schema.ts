@@ -9,7 +9,7 @@ export class Consultation {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   clientId!: MongooseSchema.Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   title!: string;
 
   @Prop({ required: false })
@@ -17,14 +17,6 @@ export class Consultation {
 
   @Prop({ required: false })
   combinaison!: string;
-
-  @Prop({ type: Object, default: {} })
-  formData!: {
-    [key: string]: any;
-  };
-
-  @Prop({ default: 0 })
-  price!: number; // Prix en euros
 
   @Prop({ default: false })
   isPaid!: boolean;

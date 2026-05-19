@@ -32,7 +32,6 @@ export class AnalysisQueueService implements OnApplicationShutdown {
       );
     }
 
-
     let job;
     try {
       job = await this.getQueue().add(

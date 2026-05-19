@@ -71,13 +71,11 @@ export class ConsultationsController {
   async findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-    @Query('type') type?: string,
     @Query('userId') userId?: string,
   ) {
     const result = await this.consultationsService.findAll({
       page,
-      limit,
-      type,
+      limit, 
       clientId: userId,
     });
 
@@ -194,20 +192,13 @@ export class ConsultationsController {
   @ApiResponse({ status: 200, description: 'Consultation trouvée.' })
   @ApiResponse({ status: 404, description: 'Consultation non trouvée.' })
   async findOne(@Param('id') id: string) {
-    const consultation: any = await this.consultationsService.findOne(id);
-
+    const consultation = await this.consultationsService.findOne(id);
     const consultationObj = consultation.toObject();
-
-    let alternatives = consultation.alternatives || consultationObj.alternatives || [];
-    if (alternatives.length) {
-      alternatives = await this.consultationsService.populateAlternatives(alternatives);
-    }
 
     return {
       success: true,
       consultation: this.consultationsService.serializeConsultationForFrontend({
-        ...consultationObj,
-        alternatives,
+        ...consultationObj
       }),
     };
   }
