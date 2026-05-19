@@ -2,6 +2,8 @@ import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common'
 import { CreateGameConfigurationDto } from './dto/create-game-configuration.dto';
 import { UpdateGameConfigurationDto } from './dto/update-game-configuration.dto';
 import { GameConfigurationService } from './game-configuration.service';
+import { GameConfigurationDocument } from './schemas/game-configuration.schema';
+
 
 @Controller('game-configurations')
 export class GameConfigurationController {
@@ -9,32 +11,31 @@ export class GameConfigurationController {
 
     @Get('current-config')
     async getCurrentConfig() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
         const configs = await this.service.findAll();
 
-        const activeConfig = configs.find(c =>
-            c.isActive && c.status === 'active'
-        );
-
+        // Trouver la configuration active
+        const activeConfig = configs.find((c: GameConfigurationDocument) => c.isActive && c.status === 'active');
         if (!activeConfig) {
+            // Retourner une configuration par défaut
+            const today = new Date();
+            const nextMonth = new Date(today);
+            nextMonth.setMonth(today.getMonth() + 1);
+
             return {
-                isActive: true,
-                status: 'active',
+                id: '',
+                isActive: false,
+                status: 'pending',
                 startgameDate: today.toISOString(),
-                endgameDate: new Date(today.setHours(23, 59, 59, 999)).toISOString(),
+                endgameDate: nextMonth.toISOString(),
             };
         }
-
-        const endDate = new Date(activeConfig.endgameDate);
-        endDate.setHours(23, 59, 59, 999);
-
+        console.log(activeConfig);
         return {
+            id: activeConfig._id.toString(),
             isActive: activeConfig.isActive,
             status: activeConfig.status,
             startgameDate: activeConfig.startgameDate.toISOString(),
-            endgameDate: endDate.toISOString(),
+            endgameDate: activeConfig.endgameDate.toISOString(),
         };
     }
 
@@ -51,25 +52,6 @@ export class GameConfigurationController {
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.service.findOne(id);
-    }
-
-    // Dans game.controller.ts - Ajoutez cette méthode
-    @Get('current-config2')
-    async getCurrentConfig2() {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const config = await this.service.findAll();
-        const result = config[0];
-        if (!result) {
-            return {
-                startDate: today.toISOString(),
-                endDate: today.toISOString(),
-            };
-        }
-        console.log(result);
-        return {
-            result,
-        };
     }
 
     @Put(':id')

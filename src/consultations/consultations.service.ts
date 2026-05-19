@@ -85,7 +85,7 @@ export class ConsultationsService {
       ...consultationObj,
       id,
       consultationId: consultationObj?.consultationId || id,
-      titre: consultationObj?.title || consultationObj?.titre || '',
+      idjeu: consultationObj?.idjeu ,
       normalizedStatus: ui.normalizedStatus,
       ui,
     };
@@ -101,8 +101,7 @@ export class ConsultationsService {
       _id: consultationObj?._id?.toString?.() || detailed.id,
       consultationId: detailed.consultationId,
       normalizedStatus: detailed.normalizedStatus,
-      title: detailed.title,
-      titre: detailed.titre,
+      idjeu: detailed.idjeu,
       combinaison: consultationObj?.combinaison || '',
       timeSpent: consultationObj?.timeSpent,
       createdAt: consultationObj?.createdAt || null,
@@ -124,11 +123,11 @@ export class ConsultationsService {
    * Créer une nouvelle consultation
    */
   async create(clientId: string, createConsultationDto: CreateConsultationDto) {
-    const { title, } = createConsultationDto;
+    const { idjeu, } = createConsultationDto;
 
     const consultation = new this.consultationModel({
       clientId,
-      title,
+      idjeu,
       isPaid: true,
       country: "Cote d'ivoire",
     });

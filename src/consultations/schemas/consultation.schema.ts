@@ -10,7 +10,7 @@ export class Consultation {
   clientId!: MongooseSchema.Types.ObjectId;
 
   @Prop({ required: false })
-  title!: string;
+  idjeu!: string;
 
   @Prop({ required: false })
   timeSpent!: string;

@@ -1,4 +1,4 @@
-import { IsArray, IsBoolean, IsDateString, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateGameConfigurationDto {
   @IsDateString()
@@ -10,18 +10,6 @@ export class CreateGameConfigurationDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
-
-  @IsOptional()
-  @IsNumber()
-  totalParticipations?: number;
-
-  @IsOptional()
-  @IsArray()
-  winningCombination?: number[];
-
-  @IsOptional()
-  @IsNumber()
-  prizePool?: number;
 
   @IsOptional()
   @IsString()
