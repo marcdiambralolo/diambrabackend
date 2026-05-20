@@ -9,7 +9,7 @@ export class Consultation {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   clientId!: MongooseSchema.Types.ObjectId;
 
-  @Prop({ required: false })
+  @Prop({ required: true })
   idjeu!: string;
 
   @Prop({ required: false })
