@@ -279,6 +279,44 @@ export class ConsultationsService {
   }
 
   /**
+ * Récupérer les consultations par idjeu
+ */
+async findByIdjeu(
+  idjeu: string,
+  query: { page?: number; limit?: number }
+): Promise<{
+  consultations: ConsultationDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const { page = 1, limit = 10 } = query;
+  const skip = (page - 1) * limit;
+
+  const filter: any = { idjeu: idjeu };
+
+  const [consultations, total] = await Promise.all([
+    this.consultationModel
+      .find(filter)
+      .populate('clientId', 'username firstName lastName email')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .exec(),
+    this.consultationModel.countDocuments(filter).exec(),
+  ]);
+
+  return {
+    consultations,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+  /**
    * Obtenir les statistiques des consultations
    */
   async getStatistics() {

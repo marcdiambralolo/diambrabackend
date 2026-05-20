@@ -31,10 +31,147 @@ export class ConsultationsController {
     private readonly consultationsService: ConsultationsService,
   ) { }
 
+  // ============================================================================
+  // ROUTES AVEC MOTS-CLÉS FIXES (sans paramètres dynamiques)
+  // ============================================================================
+
+  /**
+   * GET /consultations/statistics
+   * Récupérer les statistiques des consultations (admin only)
+   */
+  @Get('statistics')
+  @UseGuards(PermissionsGuard)
+  @Permissions(Permission.VIEW_STATISTICS)
+  getStatistics() {
+    return this.consultationsService.getStatistics();
+  }
+
+  /**
+   * GET /consultations/me
+   * Récupérer les consultations de l'utilisateur connecté
+   */
+  @Get('me')
+  @ApiOperation({
+    summary: "Récupérer les consultations de l'utilisateur connecté",
+    description: "Retourne toutes les consultations de l'utilisateur actuellement authentifié.",
+  })
+  @ApiResponse({ status: 200, description: "Liste des consultations de l'utilisateur connecté." })
+  async getMyConsultations(
+    @CurrentUser() user: UserDocument,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
+    return {
+      success: true,
+      userId: user._id,
+      consultations: result.consultations.map((consultation: any) =>
+        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
+      ),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
+  // ============================================================================
+  // ROUTES AVEC PARAMÈTRES NOMMÉS (spécifiques)
+  // ============================================================================
+
+  /**
+   * GET /consultations/by-idjeu/:idjeu
+   * Récupérer les consultations par idjeu
+   */
+  @Get('by-idjeu/:idjeu')
+  @Public()
+  @ApiOperation({
+    summary: 'Récupérer les consultations par idjeu',
+    description: 'Retourne toutes les consultations ayant un idjeu spécifique.',
+  })
+  @ApiResponse({ status: 200, description: 'Liste des consultations trouvées.' })
+  @ApiResponse({ status: 404, description: 'Aucune consultation trouvée.' })
+  async findByidjeu(
+    @Param('idjeu') idjeu: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.consultationsService.findByIdjeu(idjeu, { page, limit });
+    return {
+      success: true,
+      idjeu,
+      consultations: result.consultations.map((consultation: any) =>
+        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
+      ),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
+  /**
+   * GET /consultations/user/:userId
+   * Récupérer les consultations d'un utilisateur spécifique (Admin only)
+   */
+  @Get('user/:userId')
+  @UseGuards(PermissionsGuard)
+  @Permissions(Permission.READ_ANY_CONSULTATION)
+  @ApiOperation({
+    summary: "Récupérer les consultations d'un utilisateur",
+    description:
+      "Retourne toutes les consultations d'un utilisateur spécifique (réservé aux admins).",
+  })
+  @ApiResponse({ status: 200, description: "Liste des consultations de l'utilisateur." })
+  @ApiResponse({ status: 403, description: 'Accès refusé.' })
+  async getUserConsultations(
+    @Param('userId') userId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.consultationsService.findByClient(userId, { page, limit });
+
+    return {
+      success: true,
+      userId,
+      consultations: result.consultations.map((consultation: any) =>
+        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
+      ),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
+  // ============================================================================
+  // ROUTES AVEC PARAMÈTRE DYNAMIQUE :id (avec suffixe)
+  // ============================================================================
+
+  /**
+   * GET /consultations/:id/front-data
+   * Retourne un payload agrégé pour la page résultat et la messagerie.
+   */
+  @Get(':id/front-data')
+  async getConsultationFrontData(
+    @Param('id') id: string,
+    @CurrentUser() user: UserDocument,
+  ) {
+    const { consultation } = await this.consultationsService.findOneForUser(id, user);
+
+    return {
+      success: true,
+      consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
+    };
+  }
+
+  // ============================================================================
+  // ROUTES GÉNÉRIQUES (sans paramètres)
+  // ============================================================================
+
   /**
    * POST /consultations
    * Créer une consultation pour un utilisateur authentifié
-   * L'ID du client est automatiquement récupéré depuis le token JWT
    */
   @Post()
   @UseGuards(PermissionsGuard)
@@ -75,7 +212,7 @@ export class ConsultationsController {
   ) {
     const result = await this.consultationsService.findAll({
       page,
-      limit, 
+      limit,
       clientId: userId,
     });
 
@@ -88,96 +225,9 @@ export class ConsultationsController {
     };
   }
 
-  /**
-   * GET /consultations/user/:userId
-   * Récupérer les consultations d'un utilisateur spécifique (Admin only)
-   */
-  @Get('user/:userId')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.READ_ANY_CONSULTATION)
-  @ApiOperation({
-    summary: "Récupérer les consultations d'un utilisateur",
-    description:
-      "Retourne toutes les consultations d'un utilisateur spécifique (réservé aux admins).",
-  })
-  @ApiResponse({ status: 200, description: "Liste des consultations de l'utilisateur." })
-  @ApiResponse({ status: 403, description: 'Accès refusé.' })
-  async getUserConsultations(
-    @Param('userId') userId: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const result = await this.consultationsService.findByClient(userId, { page, limit });
-
-    return {
-      success: true,
-      userId,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
-    };
-  }
-
-  /**
-   * GET /consultations/me
-   * Récupérer les consultations de l'utilisateur connecté
-   */
-  @Get('me')
-  @ApiOperation({
-    summary: "Récupérer les consultations de l'utilisateur connecté",
-    description: "Retourne toutes les consultations de l'utilisateur actuellement authentifié.",
-  })
-  @ApiResponse({ status: 200, description: "Liste des consultations de l'utilisateur connecté." })
-  async getMyConsultations(
-    @CurrentUser() user: UserDocument,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
-    return {
-      success: true,
-      userId: user._id,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
-    };
-  }
-
-  /**
-   * GET /consultations/:id/front-data
-   * Retourne un payload agrégé pour la page résultat et la messagerie.
-   */
-  @Get(':id/front-data')
-  async getConsultationFrontData(
-    @Param('id') id: string,
-    @CurrentUser() user: UserDocument,
-  ) {
-    const { consultation } = await this.consultationsService.findOneForUser(id, user);
-
-    return {
-      success: true,
-      consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
-    };
-  }
-
-  /**
-   * GET /consultations/statistics
-   * Récupérer les statistiques des consultations (admin only)
-   */
-  @Get('statistics')
-  @UseGuards(PermissionsGuard)
-  @Permissions(Permission.VIEW_STATISTICS)
-  getStatistics() {
-    return this.consultationsService.getStatistics();
-  }
+  // ============================================================================
+  // ROUTES GÉNÉRIQUES AVEC PARAMÈTRE :id (EN DERNIER)
+  // ============================================================================
 
   /**
    * GET /consultations/:id
