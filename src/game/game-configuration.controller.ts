@@ -4,7 +4,6 @@ import { UpdateGameConfigurationDto } from './dto/update-game-configuration.dto'
 import { GameConfigurationService } from './game-configuration.service';
 import { GameConfigurationDocument } from './schemas/game-configuration.schema';
 
-
 @Controller('game-configurations')
 export class GameConfigurationController {
     constructor(private readonly service: GameConfigurationService) { }
@@ -12,14 +11,12 @@ export class GameConfigurationController {
     @Get('current-config')
     async getCurrentConfig() {
         const configs = await this.service.findAll();
-
-        // Trouver la configuration active
         const activeConfig = configs.find((c: GameConfigurationDocument) => c.isActive && c.status === 'active');
         if (!activeConfig) {
-            // Retourner une configuration par défaut
             const today = new Date();
             const nextMonth = new Date(today);
-            nextMonth.setMonth(today.getMonth() + 1);
+            today.setMonth(today.getMonth() - 2);
+            nextMonth.setMonth(today.getMonth() - 1);
 
             return {
                 id: '',
@@ -29,7 +26,7 @@ export class GameConfigurationController {
                 endgameDate: nextMonth.toISOString(),
             };
         }
-        console.log(activeConfig);
+
         return {
             id: activeConfig._id.toString(),
             isActive: activeConfig.isActive,

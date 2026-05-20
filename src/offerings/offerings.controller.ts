@@ -49,9 +49,6 @@ export class OfferingsController {
   async create(
     @Body() data: any,
   ) {
-   console.log(`[OfferingsController][POST] Création d'une nouvelle offrande`);
-   console.log(`[OfferingsController][POST] Donnees recues: ${JSON.stringify(data)}`);
-    // Validation des champs obligatoires
     const requiredFields = ['name', 'price'];
     const missingFields = requiredFields.filter(field => !data[field]);
     
@@ -75,8 +72,7 @@ export class OfferingsController {
      
     try {
       const created = await this.offeringsService.create(createData);
-      console.log(`[OfferingsController] Offrande créée avec succès: ${created._id}`);
-      return { success: true, offering: created };
+       return { success: true, offering: created };
     } catch (err) {
       console.error('[OfferingsController] Erreur lors de la création:', err);
       throw err;
@@ -89,8 +85,7 @@ export class OfferingsController {
     @Param('id') id: string,
     @Body() updateData: any,
   ) {
-    console.log(`[OfferingsController][PUT] Mise à jour de l'offrande ${id}`);
-    
+     
     const existingOffering = await this.offeringsService.findById(id);
     if (!existingOffering) {
       throw new NotFoundException('Offrande non trouvée');
@@ -120,8 +115,7 @@ export class OfferingsController {
         throw new NotFoundException('Offrande non trouvée');
       }
       
-      console.log(`[OfferingsController] Offrande ${id} mise à jour avec succès`);
-      return { success: true, offering: updated };
+       return { success: true, offering: updated };
     } catch (err) {
       console.error('[OfferingsController] Erreur lors de la mise à jour:', err);
       throw err;
