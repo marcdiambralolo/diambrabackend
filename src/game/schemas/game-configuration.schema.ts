@@ -6,19 +6,19 @@ export type GameConfigurationDocument = GameConfiguration & Document;
 
 @Schema({ timestamps: true })
 export class GameConfiguration {
-    @Prop({ required: true, index: true })
+    @Prop({ required: true })
     startgameDate!: Date;
 
-    @Prop({ required: true, index: true })
+    @Prop({ required: true })
     endgameDate!: Date;
 
     @Prop({ default: false, index: true })
     isActive!: boolean;
 
-    @Prop({ 
-        default: 'pending', 
+    @Prop({
+        default: 'pending',
         enum: ['pending', 'active', 'ended', 'cancelled'],
-        index: true 
+        index: true
     })
     status!: string;
 
