@@ -75,6 +75,43 @@ export class ConsultationsController {
     };
   }
 
+   /**
+   * GET /consultations/me/by-idjeu/:idjeu
+   * Récupérer les consultations de l'utilisateur connecté par idjeu
+   */
+  @Get('me/by-idjeu/:idjeu')
+  @ApiOperation({
+    summary: "Récupérer les consultations de l'utilisateur connecté par idjeu",
+    description: "Retourne les consultations de l'utilisateur authentifié qui correspondent à un idjeu spécifique.",
+  })
+  @ApiResponse({ status: 200, description: 'Liste des consultations trouvées.' })
+  @ApiResponse({ status: 404, description: 'Aucune consultation trouvée.' })
+  async getMyConsultationsByidjeu(
+    @CurrentUser() user: UserDocument,
+    @Param('idjeu') idjeu: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const result = await this.consultationsService.findByClientAndIdjeu(
+      user._id.toString(),
+      idjeu,
+      { page, limit }
+    );
+    
+    return {
+      success: true,
+      userId: user._id,
+      idjeu,
+      consultations: result.consultations.map((consultation: any) =>
+        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
+      ),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
   // ============================================================================
   // ROUTES AVEC PARAMÈTRES NOMMÉS (spécifiques)
   // ============================================================================

@@ -132,6 +132,39 @@ export class GameConfigurationService {
     return updatedConfig as GameConfigurationDocument;
   }
 
+
+
+ /**
+     * Trouver la dernière édition terminée
+     */
+    async findLastEnded(): Promise<GameConfigurationDocument | null> {
+        return this.gameConfigModel
+            .findOne({ status: 'ended' })
+            .sort({ endgameDate: -1, updatedAt: -1 })
+            .exec();
+    }
+
+    /**
+     * Trouver toutes les éditions terminées
+     */
+    async findAllEnded(limit: number = 5): Promise<GameConfigurationDocument[]> {
+        return this.gameConfigModel
+            .find({ status: 'ended' })
+            .sort({ endgameDate: -1 })
+            .limit(limit)
+            .exec();
+    }
+
+    /**
+     * Vérifier si une édition est terminée
+     */
+    async isEditionEnded(id: string): Promise<boolean> {
+        const config = await this.findOne(id);
+        return config.status === 'ended' || new Date(config.endgameDate) < new Date();
+    }
+
+
+
   // 🔥 Vérifier l'état actuel d'une configuration
   async getConfigStatus(id: string): Promise<{
     id: string;

@@ -52,6 +52,81 @@ export class GameConfigurationController {
         };
     }
 
+    // ============================================================================
+    // 🔥 NOUVEAU ENDPOINT : Dernier jeu terminé
+    // ============================================================================
+
+    /**
+     * GET /game-configurations/last-ended
+     * Récupère la dernière édition terminée
+     */
+    @Get('last-ended')
+    async getLastEndedConfig() {
+        const lastEndedConfig = await this.service.findLastEnded();
+        
+        if (!lastEndedConfig) {
+            return {
+                success: true,
+                hasEndedEdition: false,
+                message: 'Aucune édition terminée trouvée',
+                configuration: null,
+            };
+        }
+
+        return {
+            success: true,
+            hasEndedEdition: true,
+            configuration: {
+                id: lastEndedConfig._id.toString(),
+                isActive: lastEndedConfig.isActive,
+                status: lastEndedConfig.status,
+                startgameDate: lastEndedConfig.startgameDate.toISOString(),
+                endgameDate: lastEndedConfig.endgameDate.toISOString(),
+                createdAt: lastEndedConfig.createdAt?.toISOString(),
+                updatedAt: lastEndedConfig.updatedAt?.toISOString(),
+            },
+        };
+    }
+
+    /**
+     * GET /game-configurations/last-ended/summary
+     * Récupère un résumé de la dernière édition terminée (plus léger)
+     */
+    @Get('last-ended/summary')
+    async getLastEndedConfigSummary() {
+        const lastEndedConfig = await this.service.findLastEnded();
+        
+        if (!lastEndedConfig) {
+            return {
+                success: true,
+                hasEndedEdition: false,
+                summary: null,
+            };
+        }
+
+        return {
+            success: true,
+            hasEndedEdition: true,
+            summary: {
+                id: lastEndedConfig._id.toString(),
+                status: lastEndedConfig.status,
+                startDate: lastEndedConfig.startgameDate.toISOString(),
+                endDate: lastEndedConfig.endgameDate.toISOString(),
+                duration: this.calculateDuration(
+                    lastEndedConfig.startgameDate,
+                    lastEndedConfig.endgameDate
+                ),
+            },
+        };
+    }
+
+    private calculateDuration(startDate: Date, endDate: Date): string {
+        const diffInDays = Math.ceil(
+            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return `${diffInDays} jour${diffInDays > 1 ? 's' : ''}`;
+    }
+
     // 🔥 Endpoint pour terminer manuellement une édition
     @Post(':id/end')
     async endEdition(@Param('id') id: string) {

@@ -119,6 +119,49 @@ export class ConsultationsService {
     return { deletedCount: result.deletedCount || 0 };
   }
 
+  
+/**
+ * Récupérer les consultations d'un utilisateur par idjeu
+ */
+async findByClientAndIdjeu(
+  clientId: string,
+  idjeu: string,
+  query: { page?: number; limit?: number }
+): Promise<{
+  consultations: ConsultationDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const { page = 1, limit = 10 } = query;
+  const skip = (page - 1) * limit;
+
+  const filter: any = { 
+    clientId: clientId,
+    idjeu: idjeu 
+  };
+
+  const [consultations, total] = await Promise.all([
+    this.consultationModel
+      .find(filter)
+      .populate('clientId', 'username firstName lastName email')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .exec(),
+    this.consultationModel.countDocuments(filter).exec(),
+  ]);
+
+  return {
+    consultations,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
   /**
    * Créer une nouvelle consultation
    */
