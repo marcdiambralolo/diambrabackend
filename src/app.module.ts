@@ -24,7 +24,7 @@ import { ServicesModule } from './services/services.module';
 import { UploadModule } from './uploads/upload.module';
  import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
 import { GameConfigurationModule } from './game/game-configuration.module';
 
 @Module({
@@ -33,7 +33,7 @@ import { GameConfigurationModule } from './game/game-configuration.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
-
+   ScheduleModule.forRoot(),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
