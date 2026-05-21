@@ -78,12 +78,10 @@ export class AdminController {
   @ApiOperation({ summary: 'Lister les consultations (admin)' })
   @ApiResponse({ status: 200, description: 'Liste paginée des consultations' })
   async getConsultations(
-    @Query('search') search?: string,
     @Query('page') page = '1',
     @Query('limit') limit = '18',
   ) {
     const result = await this.adminService.getConsultations({
-      search,
       page: parseInt(page as string, 10) || 1,
       limit: parseInt(limit as string, 10) || 18,
     });

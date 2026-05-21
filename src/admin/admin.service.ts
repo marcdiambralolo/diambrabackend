@@ -361,48 +361,33 @@ export class AdminService {
   }
 
   async getConsultations(options: {
-    search?: string;
-    status?: string;
-    type?: string;
     page?: number;
     limit?: number;
+    sortBy?: 'createdAt' | 'combinaison' | 'timeSpent';
+    sortOrder?: 'asc' | 'desc';
   }) {
-    const { search, status = 'all', type = 'all', page = 1, limit = 10 } = options || {};
-
-    const filter: any = { type: { $ne: 'CINQ_ETOILES' } };
-
-    if (search && search.trim().length > 0) {
-      const searchTerm = search.trim();
-      // Utiliser text search pour la performance
-      filter.$or = [
-        { $text: { $search: searchTerm } },
-        { 'formData.nom': { $regex: searchTerm, $options: 'i' } },
-        { 'formData.prenoms': { $regex: searchTerm, $options: 'i' } },
-      ];
-    }
-
-    if (status && status !== 'all') {
-      filter.status = status.toUpperCase();
-    }
-
-    if (type && type !== 'all') {
-      filter.type = type;
-    }
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = options || {};
 
     const skip = Math.max(0, (page - 1) * limit);
+    const sortDirection = sortOrder === 'desc' ? -1 : 1;
 
     const [total, docs] = await Promise.all([
-      this.consultationModel.countDocuments(filter).exec(),
+      this.consultationModel.countDocuments().lean().exec(),
       this.consultationModel
-        .find(filter)
+        .find()
         .select('_id combinaison timeSpent createdAt clientId')
         .populate('clientId', 'username firstName lastName phone')
-        .collation({ locale: 'fr' })
-        .sort({ createdAt: -1 })
+        .populate('idjeu', 'startgameDate endgameDate status isActive')
+        .sort({ [sortBy]: sortDirection })
         .skip(skip)
         .limit(limit)
         .lean()
-        .exec(),
+        .exec()
     ]);
 
     const consultations = docs.map((c: any) => ({
@@ -410,7 +395,19 @@ export class AdminService {
       id: c._id.toString(),
     }));
 
-    return { consultations, total };
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      consultations,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    };
   }
 
   async getPayments(options: {

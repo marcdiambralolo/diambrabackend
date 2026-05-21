@@ -33,134 +33,54 @@ export class ConsultationsService {
     };
   }
 
-  private toPlainConsultation<T>(consultation: T): T {
-    if (consultation && typeof (consultation as any).toObject === 'function') {
-      return (consultation as any).toObject();
-    }
-
-    return consultation;
-  }
-
-  private serializeConsultationClient(consultation: Record<string, any>) {
-    const populatedClient = consultation?.clientId && typeof consultation.clientId === 'object'
-      ? consultation.clientId
-      : null;
-    const displayName = populatedClient?.username || populatedClient?.email || '';
-
-    return {
-      id: populatedClient?._id?.toString?.() || consultation?.clientId?.toString?.() || '',
-      email: populatedClient?.email || '',
-      username: populatedClient?.username || '',
-      firstName: populatedClient?.firstName || '',
-      lastName: populatedClient?.lastName || '',
-      displayName,
-    };
-  }
-
-  private getConsultationDisplayModel(consultation: Partial<Consultation> & Record<string, any>) {
-    const normalizedStatus = " ";
-    const effectiveIsPaid = Boolean(consultation?.paymentId);
-    const statusLabel = 'Paiement requis';
-    const statusTone: 'amber' | 'emerald' | 'rose' | 'sky' = 'amber';
-    const helperText = "Cette consultation n'est pas encore prête";
-
-    return {
-      normalizedStatus,
-      statusLabel,
-      statusTone,
-      helperText,
-      effectiveIsPaid,
-      requiresPayment: !effectiveIsPaid,
-      isPending: true,
-      isCompleted: true,
-    };
-  }
-
-  serializeConsultationForFrontend(consultation: Partial<Consultation> & Record<string, any>) {
-    const consultationObj = this.toPlainConsultation(consultation);
-    const ui = this.getConsultationDisplayModel(consultationObj);
-    const id = consultationObj?._id?.toString?.() || consultationObj?.id?.toString?.() || '';
-
-    return {
-      ...consultationObj,
-      id,
-      consultationId: consultationObj?.consultationId || id,
-      idjeu: consultationObj?.idjeu ,
-      normalizedStatus: ui.normalizedStatus,
-      ui,
-    };
-  }
-
-  serializeConsultationSummaryForFrontend(consultation: Partial<Consultation> & Record<string, any>) {
-    const consultationObj = this.toPlainConsultation(consultation);
-    const detailed = this.serializeConsultationForFrontend(consultationObj);
-    const client = this.serializeConsultationClient(consultationObj);
-
-    return {
-      id: detailed.id,
-      _id: consultationObj?._id?.toString?.() || detailed.id,
-      consultationId: detailed.consultationId,
-      normalizedStatus: detailed.normalizedStatus,
-      idjeu: detailed.idjeu,
-      combinaison: consultationObj?.combinaison || '',
-      timeSpent: consultationObj?.timeSpent,
-      createdAt: consultationObj?.createdAt || null,
-      updatedAt: consultationObj?.updatedAt || null,
-      paymentId: detailed.paymentId || null,
-      client,
-      clientId: client.id || consultationObj?.clientId,
-      clientDisplayName: client.displayName,
-      ui: detailed.ui,
-    };
-  }
-
   async deleteMany(filter: any): Promise<{ deletedCount: number }> {
     const result = await this.consultationModel.deleteMany(filter).exec();
     return { deletedCount: result.deletedCount || 0 };
   }
 
-  
-/**
- * Récupérer les consultations d'un utilisateur par idjeu
- */
-async findByClientAndIdjeu(
-  clientId: string,
-  idjeu: string,
-  query: { page?: number; limit?: number }
-): Promise<{
-  consultations: ConsultationDocument[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}> {
-  const { page = 1, limit = 10 } = query;
-  const skip = (page - 1) * limit;
+  /**
+   * Récupérer les consultations d'un utilisateur par idjeu
+   */
+  async findByClientAndIdjeu(
+    clientId: string,
+    idjeu: string,
+    query: { page?: number; limit?: number }
+  ): Promise<{
+    consultations: ConsultationDocument[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
 
-  const filter: any = { 
-    clientId: clientId,
-    idjeu: idjeu 
-  };
+    const filter: any = {
+      clientId: clientId,
+      idjeu: idjeu
+    };
 
-  const [consultations, total] = await Promise.all([
-    this.consultationModel
-      .find(filter)
-      .populate('clientId', 'username firstName lastName email')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .exec(),
-    this.consultationModel.countDocuments(filter).exec(),
-  ]);
+    const [consultations, total] = await Promise.all([
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison timeSpent createdAt clientId')
+        .populate('clientId', 'username firstName lastName phone')
+        .populate('idjeu', 'startgameDate endgameDate status isActive')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .exec(),
+      this.consultationModel.countDocuments(filter).exec(),
+    ]);
 
-  return {
-    consultations,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
+    return {
+      consultations,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   /**
    * Créer une nouvelle consultation
@@ -210,7 +130,9 @@ async findByClientAndIdjeu(
     const [consultations, total] = await Promise.all([
       this.consultationModel
         .find(filter)
-        .populate('clientId', 'username firstName lastName')
+        .select('_id combinaison timeSpent createdAt clientId')
+        .populate('clientId', 'username firstName lastName phone')
+        .populate('idjeu', 'startgameDate endgameDate status isActive')
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 })
@@ -279,7 +201,9 @@ async findByClientAndIdjeu(
     }
     const consultation = await this.consultationModel
       .findByIdAndUpdate(id, updateConsultationDto)
-      .populate('clientId', 'username firstName lastName email')
+      .select('_id combinaison timeSpent createdAt clientId')
+      .populate('clientId', 'username firstName lastName phone')
+      .populate('idjeu', 'startgameDate endgameDate status isActive')
       .exec();
 
     if (!consultation) {
@@ -324,40 +248,42 @@ async findByClientAndIdjeu(
   /**
  * Récupérer les consultations par idjeu
  */
-async findByIdjeu(
-  idjeu: string,
-  query: { page?: number; limit?: number }
-): Promise<{
-  consultations: ConsultationDocument[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}> {
-  const { page = 1, limit = 10 } = query;
-  const skip = (page - 1) * limit;
+  async findByIdjeu(
+    idjeu: string,
+    query: { page?: number; limit?: number }
+  ): Promise<{
+    consultations: ConsultationDocument[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
 
-  const filter: any = { idjeu: idjeu };
+    const filter: any = { idjeu: idjeu };
 
-  const [consultations, total] = await Promise.all([
-    this.consultationModel
-      .find(filter)
-      .populate('clientId', 'username firstName lastName email')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .exec(),
-    this.consultationModel.countDocuments(filter).exec(),
-  ]);
+    const [consultations, total] = await Promise.all([
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison timeSpent createdAt clientId')
+        .populate('clientId', 'username firstName lastName phone')
+        .populate('idjeu', 'startgameDate endgameDate status isActive')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .exec(),
+      this.consultationModel.countDocuments(filter).exec(),
+    ]);
 
-  return {
-    consultations,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
+    return {
+      consultations,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   /**
    * Obtenir les statistiques des consultations

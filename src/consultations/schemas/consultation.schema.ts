@@ -9,8 +9,8 @@ export class Consultation {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: false })
   clientId!: MongooseSchema.Types.ObjectId;
 
-  @Prop({ required: true })
-  idjeu!: string;
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'GameConfiguration', required: true })
+  idjeu!: MongooseSchema.Types.ObjectId;
 
   @Prop({ required: false })
   timeSpent!: string;

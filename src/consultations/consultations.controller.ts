@@ -65,9 +65,7 @@ export class ConsultationsController {
     return {
       success: true,
       userId: user._id,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
+      consultations: result.consultations,
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -75,10 +73,10 @@ export class ConsultationsController {
     };
   }
 
-   /**
-   * GET /consultations/me/by-idjeu/:idjeu
-   * Récupérer les consultations de l'utilisateur connecté par idjeu
-   */
+  /**
+  * GET /consultations/me/by-idjeu/:idjeu
+  * Récupérer les consultations de l'utilisateur connecté par idjeu
+  */
   @Get('me/by-idjeu/:idjeu')
   @ApiOperation({
     summary: "Récupérer les consultations de l'utilisateur connecté par idjeu",
@@ -97,14 +95,12 @@ export class ConsultationsController {
       idjeu,
       { page, limit }
     );
-    
+
     return {
       success: true,
       userId: user._id,
       idjeu,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
+      consultations: result.consultations,
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -134,12 +130,12 @@ export class ConsultationsController {
     @Query('limit') limit?: number,
   ) {
     const result = await this.consultationsService.findByIdjeu(idjeu, { page, limit });
+    console.log(result);
+    console.log(result.consultations);
     return {
       success: true,
       idjeu,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
+      consultations: result.consultations,
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -171,9 +167,7 @@ export class ConsultationsController {
     return {
       success: true,
       userId,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
+      consultations: result.consultations,
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -198,7 +192,7 @@ export class ConsultationsController {
 
     return {
       success: true,
-      consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
+      consultation,
     };
   }
 
@@ -222,12 +216,11 @@ export class ConsultationsController {
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   async create(@Body() body: any, @CurrentUser() user: UserDocument) {
     const consultation = await this.consultationsService.create(user._id.toString(), body);
-    const normalizedConsultation = this.consultationsService.serializeConsultationForFrontend(consultation);
 
     return {
       success: true,
       message: 'Consultation créée avec succès',
-      consultation: normalizedConsultation,
+      consultation: consultation,
     };
   }
 
@@ -255,9 +248,7 @@ export class ConsultationsController {
 
     return {
       success: true,
-      consultations: result.consultations.map((consultation: any) =>
-        this.consultationsService.serializeConsultationSummaryForFrontend(consultation),
-      ),
+      consultations: result.consultations,
       total: result.total,
     };
   }
@@ -284,9 +275,7 @@ export class ConsultationsController {
 
     return {
       success: true,
-      consultation: this.consultationsService.serializeConsultationForFrontend({
-        ...consultationObj
-      }),
+      consultation: consultationObj,
     };
   }
 
@@ -298,7 +287,7 @@ export class ConsultationsController {
   update(@Param('id') id: string, @Body() updateConsultationDto: UpdateConsultationDto) {
     return this.consultationsService.update(id, updateConsultationDto).then((consultation) => ({
       success: true,
-      consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
+      consultation,
     }));
   }
 
@@ -310,7 +299,7 @@ export class ConsultationsController {
   updatePut(@Param('id') id: string, @Body() updateConsultationDto: any) {
     return this.consultationsService.update(id, updateConsultationDto).then((consultation) => ({
       success: true,
-      consultation: this.consultationsService.serializeConsultationForFrontend(consultation as any),
+      consultation,
     }));
   }
 
