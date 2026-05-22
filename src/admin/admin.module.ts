@@ -7,6 +7,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { WalletTransaction, WalletTransactionSchema } from '../wallet/schemas/wallet-transaction.schema';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { GameConfiguration, GameConfigurationSchema } from '@/game/schemas/game-configuration.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AdminService } from './admin.service';
       { name: Consultation.name, schema: ConsultationSchema },
       { name: Payment.name, schema: PaymentSchema },
       { name: WalletTransaction.name, schema: WalletTransactionSchema },
+       { name: GameConfiguration.name, schema: GameConfigurationSchema },
     ]),
   ],
   controllers: [AdminController],

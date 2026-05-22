@@ -130,8 +130,6 @@ export class ConsultationsController {
     @Query('limit') limit?: number,
   ) {
     const result = await this.consultationsService.findByIdjeu(idjeu, { page, limit });
-    console.log(result);
-    console.log(result.consultations);
     return {
       success: true,
       idjeu,

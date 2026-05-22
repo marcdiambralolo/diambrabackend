@@ -72,6 +72,49 @@ export class AdminController {
     return result;
   }
 
+  // admin.controller.ts
+  @Get('consultations/ended-editions')
+  @UseGuards(PermissionsGuard)
+  @Permissions(Permission.READ_ANY_CONSULTATION)
+  @ApiOperation({ summary: 'Lister les consultations des éditions terminées (admin)' })
+  @ApiResponse({ status: 200, description: 'Liste paginée des consultations des éditions terminées' })
+  async getConsultationsOfEndedEditions(
+    @Query('page') page = '1',
+    @Query('limit') limit = '18',
+  ) {
+    const result = await this.adminService.getConsultationsOfEndedEditions({
+      page: parseInt(page as string, 10) || 1,
+      limit: parseInt(limit as string, 10) || 18,
+    });
+    return result;
+  }
+
+  @Get('last-ended-game/stats')
+  @ApiOperation({ summary: 'Récupérer les statistiques du dernier jeu terminé (admin)' })
+  @ApiResponse({ status: 200, description: 'Statistiques du dernier jeu terminé' })
+  async getLastEndedGameStats() {
+    const result = await this.adminService.getLastEndedGameStats();
+    console.log("Statistiques du dernier jeu terminé : ", result);
+    return result;
+  }
+
+  @Get('consultations/active-game')
+  @UseGuards(PermissionsGuard)
+  @Permissions(Permission.READ_ANY_CONSULTATION)
+  @ApiOperation({ summary: 'Récupérer les consultations du jeu actif (admin)' })
+  @ApiResponse({ status: 200, description: 'Liste des consultations du jeu actif' })
+  async getActiveGameConsultations(
+    @Query('page') page = '1',
+    @Query('limit') limit = '18',
+  ) {
+    const result = await this.adminService.getActiveGameConsultations({
+      page: parseInt(page as string, 10) || 1,
+      limit: parseInt(limit as string, 10) || 18,
+    });
+    return result;
+  }
+
+
   @Get('consultations')
   @UseGuards(PermissionsGuard)
   @Permissions(Permission.READ_ANY_CONSULTATION)
