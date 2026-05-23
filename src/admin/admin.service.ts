@@ -572,7 +572,7 @@ export class AdminService {
     const consultations = await this.consultationModel
       .find({ idjeu: lastEndedGameConfig._id })
       .select('_id combinaison timeSpent createdAt clientId')
-      .populate('clientId', 'username firstName lastName phone')
+      .populate('clientId', 'username firstName lastName phone  country')
       .populate('idjeu', 'startgameDate endgameDate status isActive')
       .sort({ createdAt: -1 })
       .lean()
