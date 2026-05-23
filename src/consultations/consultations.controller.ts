@@ -62,6 +62,7 @@ export class ConsultationsController {
     @Query('limit') limit?: number,
   ) {
     const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
+    console.log(result);
     return {
       success: true,
       userId: user._id,

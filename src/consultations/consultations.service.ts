@@ -52,7 +52,7 @@ export class ConsultationsService {
     limit: number;
     totalPages: number;
   }> {
-    const { page = 1, limit = 10 } = query;
+    const { page = 1, limit = 84600 } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {
@@ -121,7 +121,7 @@ export class ConsultationsService {
     limit?: number;
     clientId?: string;
   }) {
-    const { page = 1, limit = 10, clientId, } = query;
+    const { page = 1, limit = 10000, clientId, } = query;
     const skip = (page - 1) * limit;
 
     const filter: any = {};
