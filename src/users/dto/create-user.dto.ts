@@ -1,5 +1,5 @@
 
-import { IsArray, IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEmail, IsOptional, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
 import { Permission } from '../../common/enums/permission.enum';
 
 export class CreateUserDto {
@@ -48,4 +48,40 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+
+  @IsString()
+  @IsOptional()
+  nom?: string;
+
+  @IsString()
+  @IsOptional()
+  prenoms?: string;
+
+
+
+
+
+
+
+
+
+
+  @IsString()
+  @IsOptional()
+  villeNaissance?: string;
+
+  @IsDateString()
+  @IsOptional()
+  dateNaissance?: string;
+
+  @IsString()
+  @IsOptional()
+  heureNaissance?: string;
+
+  @IsString()
+  @Length(4, 4, { message: 'Le code secret doit contenir exactement 4 chiffres' })
+  @Matches(/^\d{4}$/, { message: 'Le code secret doit être composé de 4 chiffres' })
+  @IsOptional()
+  secretCode?: string;
 }

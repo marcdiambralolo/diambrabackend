@@ -133,6 +133,9 @@ export class User {
   @Prop({ type: String, maxlength: 100 })
   country?: string;
 
+  @Prop({ type: String, maxlength: 4 })
+  secretCode?: string;
+  
   @Prop({ type: String, maxlength: 100 })
   city?: string;
 }

@@ -73,8 +73,16 @@ export class UsersController {
   }
 
   @Patch('me')
-  updateMyProfile(@CurrentUser() user: UserDocument, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(user._id.toString(), updateUserDto);
+  @ApiOperation({ summary: 'Modifier partiellement mon profil', description: 'Modifie partiellement les informations de l\'utilisateur connecté.' })
+  async patchMyProfile(@CurrentUser() user: UserDocument, @Body() updateUserDto: any) {
+    const updatedUser = await this.usersService.update(user._id.toString(), updateUserDto);
+    const { password, ...result } = updatedUser;
+    console.log(password);
+    return {
+      success: true,
+      message: 'Profil modifié avec succès',
+      user: result,
+    };
   }
 
   @Patch('me/password')
