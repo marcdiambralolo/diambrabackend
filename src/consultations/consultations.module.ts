@@ -7,6 +7,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { ConsultationsController } from './consultations.controller';
 import { ConsultationsService } from './consultations.service';
 import { Consultation, ConsultationSchema } from './schemas/consultation.schema';
+import { GameConfiguration, GameConfigurationSchema } from '@/game/schemas/game-configuration.schema';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { Consultation, ConsultationSchema } from './schemas/consultation.schema'
     MongooseModule.forFeature([
       { name: Consultation.name, schema: ConsultationSchema },
       { name: User.name, schema: UserSchema },
+      { name: GameConfiguration.name, schema: GameConfigurationSchema },
     ]),
   ],
   controllers: [ConsultationsController,],

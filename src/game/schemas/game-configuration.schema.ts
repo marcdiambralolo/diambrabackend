@@ -12,6 +12,9 @@ export class GameConfiguration {
     @Prop({ required: true })
     endgameDate!: Date;
 
+    @Prop({ required: false })
+    winningCombination!: string;
+
     @Prop({ default: false, index: true })
     isActive!: boolean;
 
@@ -31,5 +34,6 @@ export class GameConfiguration {
 
 export const GameConfigurationSchema = SchemaFactory.createForClass(GameConfiguration);
 
-// Ajout d'index composé pour les performances
+// Index composé pour les performances
 GameConfigurationSchema.index({ isActive: 1, status: 1 });
+GameConfigurationSchema.index({ status: 1, endgameDate: -1 });

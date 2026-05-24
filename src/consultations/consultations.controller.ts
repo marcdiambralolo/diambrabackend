@@ -252,6 +252,23 @@ export class ConsultationsController {
     };
   }
 
+
+
+  @Get('ended-game')
+  @ApiOperation({ summary: 'Récupérer les consultations du jeu actif (admin)' })
+  @ApiResponse({ status: 200, description: 'Liste des consultations du jeu actif' })
+  async getMyEndedGameConsultations(
+    @Query('page') page = '1',
+    @Query('limit') limit = '18',
+  ) {
+    const result = await this.consultationsService.getEndedGameConsultations({
+      page: parseInt(page as string, 10) || 1,
+      limit: parseInt(limit as string, 10) || 18,
+    });
+    console.log("Dernier jeu terminé : ",result);
+    return result;
+  }
+
   // ============================================================================
   // ROUTES GÉNÉRIQUES AVEC PARAMÈTRE :id (EN DERNIER)
   // ============================================================================
