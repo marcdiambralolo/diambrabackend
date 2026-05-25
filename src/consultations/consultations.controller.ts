@@ -252,8 +252,6 @@ export class ConsultationsController {
     };
   }
 
-
-
   @Get('ended-game')
   @ApiOperation({ summary: 'Récupérer les consultations du jeu actif (admin)' })
   @ApiResponse({ status: 200, description: 'Liste des consultations du jeu actif' })
@@ -265,7 +263,7 @@ export class ConsultationsController {
       page: parseInt(page as string, 10) || 1,
       limit: parseInt(limit as string, 10) || 18,
     });
-    console.log("Dernier jeu terminé : ",result);
+    console.log("Dernier jeu terminé : ", result);
     return result;
   }
 

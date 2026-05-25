@@ -6,111 +6,7 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { Consultation, ConsultationDocument } from './schemas/consultation.schema';
 import { GameConfiguration, GameConfigurationDocument } from '@/game/schemas/game-configuration.schema';
-
-export interface EndedGameConsultationsResulte {
-  consultations: any[];
-  activeEdition: any;
-  winners: any;
-  statistics: any;
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-
-export interface Winner {
-  consultationId: string;
-  clientId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email?: string;
-  combination: string;
-  timeSpent: number;
-  createdAt: Date;
-  rank: number;
-}
-
-export interface WinnersData {
-  exact: Winner[];
-  disordered: Winner[];
-  totalExact: number;
-  totalDisordered: number;
-  totalWinners: number;
-}
-
-export interface StatisticsData {
-  totalConsultations: number;
-  totalParticipants: number;
-  uniqueParticipants: number;
-  winningCombination: string;
-  successRate: {
-    exact: number;
-    disordered: number;
-    overall: number;
-  };
-  digits: {
-    frequency: Record<string, number>;
-    mostFrequent: Array<{ digit: number; count: number; percentage: number }>;
-    leastFrequent: Array<{ digit: number; count: number; percentage: number }>;
-  };
-  timeStats: {
-    average: number;
-    fastest: {
-      time: number;
-      clientId: string | null;
-      username: string | null;
-      combination: string | null;
-    };
-    slowest: {
-      time: number;
-      clientId: string | null;
-      username: string | null;
-      combination: string | null;
-    };
-    distribution: {
-      under30s: number;
-      under60s: number;
-      under120s: number;
-      over120s: number;
-    };
-  };
-  combinations: {
-    totalUnique: number;
-    mostCommon: Array<{ combination: string; count: number; percentage: number }>;
-    diversity: number;
-  };
-  topParticipants: Array<{
-    clientId: string;
-    username: string;
-    participations: number;
-  }>;
-  medals: {
-    gold: Winner | null;
-    silver: Winner | null;
-    bronze: Winner | null;
-  };
-}
-
-export interface EndedGameConsultationsResult {
-  consultations: any[];
-  activeEdition: {
-    id: string;
-    startDate: Date;
-    endDate: Date;
-    status: string;
-    isActive: boolean;
-    winningCombination: string | null;
-  } | null;
-  winners: WinnersData | null;
-  statistics: StatisticsData | null;
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+import { EndedGameConsultationsResult, StatisticsData } from '@/common/interfaces';
 
 @Injectable()
 export class ConsultationsService {
@@ -189,10 +85,6 @@ export class ConsultationsService {
       totalPages: Math.ceil(total / limit),
     };
   }
-
-
-
-
 
   /**
    * Créer une nouvelle consultation
@@ -337,7 +229,6 @@ export class ConsultationsService {
     return consultation;
   }
 
-
   async remove(id: string, userId: string, userRole: Role) {
     const consultation = await this.consultationModel.findById(id).exec();
 
@@ -458,7 +349,6 @@ export class ConsultationsService {
 
     return consultations;
   }
-
 
   // consultations.service.ts
   async getEndedGameConsultations(options: {

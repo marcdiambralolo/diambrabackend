@@ -183,7 +183,7 @@ export class AuthService {
    */
   async register(registerDto: RegisterDto, response?: Response) {
     const { username, gender, country, phone, password, ...optionals } = registerDto;
-    const email = `${username}@diambra.net`;
+    const email = username.includes('@') ? username : `${username}@diambra.net`;
 
     // Vérifier si le username ou l'email existe déjà
     const existingUser = await this.userModel.findOne({ $or: [{ email }, { username }] }).exec();

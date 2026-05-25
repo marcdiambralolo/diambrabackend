@@ -256,5 +256,4 @@ export class UsersService {
       }, {}),
     };
   }
-
 }
