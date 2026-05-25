@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Role } from '../common/enums/role.enum';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
@@ -198,14 +198,26 @@ export class ConsultationsService {
    * Créer une nouvelle consultation
    */
   async create(clientId: string, createConsultationDto: CreateConsultationDto) {
-    const { idjeu, } = createConsultationDto;
+   
+    const { idjeu } = createConsultationDto;
+
+    // Vérifier et convertir les IDs en ObjectId
+    if (!Types.ObjectId.isValid(clientId)) {
+        throw new Error(`Invalid clientId: ${clientId}`);
+    }
+    
+    if (!idjeu || !Types.ObjectId.isValid(idjeu)) {
+        throw new Error(`Invalid idjeu: ${idjeu}`);
+    }
 
     const consultation = new this.consultationModel({
-      clientId,
-      idjeu,
-      isPaid: true,
-      country: "Cote d'ivoire",
+        clientId: new Types.ObjectId(clientId),  // Conversion explicite
+        idjeu: new Types.ObjectId(idjeu),        // Conversion explicite
+        isPaid: true,
+        country: "Cote d'ivoire",
     });
+   
+    console.log('createConsultationDto', consultation);
 
     await consultation.save();
 
