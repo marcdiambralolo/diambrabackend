@@ -55,7 +55,6 @@ export class OfferingsService {
    * @param ids Tableau d'identifiants
    */
   async findManyByIds(ids: string[]): Promise<any[]> {
-    console.log("Recherche des offrandes pour les IDs :", ids);
     if (!Array.isArray(ids) || ids.length === 0) return [];
     // Si tu utilises Mongoose :
     return this.offeringModel.find({ _id: { $in: ids } }).lean();

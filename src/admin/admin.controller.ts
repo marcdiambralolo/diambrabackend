@@ -94,7 +94,6 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Statistiques du dernier jeu terminé' })
   async getLastEndedGameStats() {
     const result = await this.adminService.getLastEndedGameStats();
-    console.log("Statistiques du dernier jeu terminé : ", result);
     return result;
   }
 

@@ -62,16 +62,17 @@ export class ConsultationsController {
     @Query('limit') limit?: number,
   ) {
     const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
-    console.log(result);
+
     return {
-      success: true,
-      userId: user._id,
-      consultations: result.consultations,
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
-    };
+    success: true,
+    userId: user._id,
+    consultations: result.consultations,
+    editions: result.editions, // 🔥 Ajout des informations des éditions
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+  };
   }
 
   /**
@@ -98,15 +99,23 @@ export class ConsultationsController {
     );
 
     return {
-      success: true,
-      userId: user._id,
-      idjeu,
-      consultations: result.consultations,
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
-    };
+    success: true,
+    userId: user._id,
+    idjeu,
+    consultations: result.consultations,
+    edition: {  // 🔥 Ajout des informations de l'édition
+      id: result.edition!._id.toString(),
+      startDate: result.edition!.startgameDate,
+      endDate: result.edition!.endgameDate,
+      status: result.edition!.status,
+      isActive: result.edition!.isActive,
+      winningCombination: result.edition!.winningCombination || null,
+    },
+    total: result.total,
+    page: result.page,
+    limit: result.limit,
+    totalPages: result.totalPages,
+  };
   }
 
   // ============================================================================
@@ -263,7 +272,6 @@ export class ConsultationsController {
       page: parseInt(page as string, 10) || 1,
       limit: parseInt(limit as string, 10) || 18,
     });
-    console.log("Dernier jeu terminé : ", result);
     return result;
   }
 

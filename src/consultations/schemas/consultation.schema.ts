@@ -32,3 +32,4 @@ export const ConsultationSchema = SchemaFactory.createForClass(Consultation);
 
 ConsultationSchema.index({ clientId: 1, createdAt: -1 });
 ConsultationSchema.index({ createdAt: -1 });
+ConsultationSchema.index({ idjeu: 1, createdAt: -1 });

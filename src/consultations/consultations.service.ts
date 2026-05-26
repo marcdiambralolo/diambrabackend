@@ -45,7 +45,7 @@ export class ConsultationsService {
   /**
    * Récupérer les consultations d'un utilisateur par idjeu
    */
-  async findByClientAndIdjeu(
+  async findByClientAndIdjeu2(
     clientId: string,
     idjeu: string,
     query: { page?: number; limit?: number }
@@ -108,8 +108,6 @@ export class ConsultationsService {
         isPaid: true,
         country: "Cote d'ivoire",
     });
-   
-    console.log('createConsultationDto', consultation);
 
     await consultation.save();
 
@@ -300,6 +298,63 @@ export class ConsultationsService {
     };
   }
 
+  // consultations.service.ts
+/**
+ * Récupérer les consultations d'un utilisateur par idjeu avec les infos de l'édition
+ */
+async findByClientAndIdjeu(
+  clientId: string,
+  idjeu: string,
+  query: { page?: number; limit?: number }
+): Promise<{
+  consultations: ConsultationDocument[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  edition: GameConfigurationDocument | null; // 🔥 Ajout des infos de l'édition
+}> {
+  const { page = 1, limit = 84600 } = query;
+  const skip = (page - 1) * limit;
+
+  // 🔥 Récupérer les informations de l'édition
+  const edition = await this.gameConfigModel.findById(idjeu).lean().exec();
+  
+  if (!edition) {
+    throw new NotFoundException(`Edition with id ${idjeu} not found`);
+  }
+
+  const filter: any = {
+    clientId: clientId,
+    idjeu: idjeu
+  };
+
+  const [consultations, total] = await Promise.all([
+    this.consultationModel
+      .find(filter)
+      .select('_id combinaison timeSpent createdAt clientId')
+      .populate('clientId', 'username firstName lastName phone email country')
+      .populate('idjeu', 'startgameDate endgameDate status isActive winningCombination')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec(),
+    this.consultationModel.countDocuments(filter).exec(),
+  ]);
+
+  // Formater les consultations
+
+  return {
+    consultations: consultations as any,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+    edition: edition as unknown as GameConfigurationDocument, // 🔥 Retourner l'édition
+  };
+}
+
   /**
    * Obtenir les statistiques des consultations
    */
@@ -333,11 +388,114 @@ export class ConsultationsService {
     };
   }
 
-  async findByClient(userId: string, query: { page?: number; limit?: number }) {
+  async findByClient2(userId: string, query: { page?: number; limit?: number }) {
     // Utilise l'enum pour le statut
     return this.findAll({ ...query, clientId: userId, });
   }
 
+  // consultations.service.ts
+// consultations.service.ts
+// consultations.service.ts
+async findByClient(
+  userId: string, 
+  query: { page?: number; limit?: number }
+): Promise<{
+  consultations: any[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  editions: any[];
+}> {
+  const { page = 1, limit = 10 } = query;
+  const skip = (page - 1) * limit;
+
+  const filter: any = { clientId: userId };
+
+  const [consultationsDocs, total] = await Promise.all([
+    this.consultationModel
+      .find(filter)
+      .select('_id combinaison timeSpent createdAt clientId idjeu')
+      .populate('clientId', 'username firstName lastName phone email country')
+      .populate('idjeu', 'startgameDate endgameDate status isActive winningCombination')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .lean() // On garde lean()
+      .exec(),
+    this.consultationModel.countDocuments(filter).exec(),
+  ]);
+
+  // 🔥 Solution magique : convertir en JSON et reparser
+  const consultations = JSON.parse(JSON.stringify(consultationsDocs));
+
+  // Le reste du code reste identique...
+  const getObjectIdString = (id: any): string => {
+    if (!id) return '';
+    if (typeof id === 'string') return id;
+    return String(id);
+  };
+
+  // Extraire les IDs uniques des éditions
+  const editionIds = [...new Set(
+    consultations
+      .map((c: any )=> c.idjeu?._id)
+      .filter(Boolean)
+  )];
+
+  // Récupérer les informations des éditions
+  let editionsData: any[] = [];
+  if (editionIds.length > 0) {
+    const editionsDocs = await this.gameConfigModel
+      .find({ _id: { $in: editionIds } })
+      .select('_id startgameDate endgameDate status isActive winningCombination')
+      .lean()
+      .exec();
+    
+    editionsData = JSON.parse(JSON.stringify(editionsDocs));
+  }
+
+  // Créer un map des éditions par ID
+  const editionsMap = new Map();
+  editionsData.forEach(edition => {
+    const editionId = getObjectIdString(edition._id);
+    editionsMap.set(editionId, {
+      id: editionId,
+      startDate: edition.startgameDate,
+      endDate: edition.endgameDate,
+      status: edition.status,
+      isActive: edition.isActive,
+      winningCombination: edition.winningCombination || null,
+    });
+  });
+
+  // Formater les consultations
+  const formattedConsultations = consultations.map((consultation: any) => ({
+    _id: getObjectIdString(consultation._id),
+    combinaison: consultation.combinaison,
+    timeSpent: consultation.timeSpent,
+    createdAt: consultation.createdAt,
+    clientId: consultation.clientId ? {
+      _id: getObjectIdString(consultation.clientId._id),
+      username: consultation.clientId.username || 'Anonyme',
+      firstName: consultation.clientId.firstName || '',
+      lastName: consultation.clientId.lastName || '',
+      phone: consultation.clientId.phone || '',
+      email: consultation.clientId.email || '',
+      country: consultation.clientId.country || '',
+    } : null,
+    edition: consultation.idjeu?._id ? editionsMap.get(getObjectIdString(consultation.idjeu._id)) || null : null,
+  }));
+
+  return {
+    consultations: formattedConsultations,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+    editions: Array.from(editionsMap.values()),
+  };
+}
   async findManyByIds(ids: string[]) {
     if (!ids.length) {
       return [];

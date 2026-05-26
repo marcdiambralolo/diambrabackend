@@ -551,7 +551,6 @@ export class AdminService {
       .sort({ updatedAt: -1, })
       .select('_id startgameDate endgameDate status isActive updatedAt createdAt')
       .exec();
-    console.log("dernier jeu ", lastEndedGameConfig)
 
     if (!lastEndedGameConfig) {
       return {
@@ -577,8 +576,6 @@ export class AdminService {
       .sort({ createdAt: -1 })
       .lean()
       .exec();
-
-    console.log("Consultations de l'édition terminée : ", consultations);
 
     // Filtrer les consultations terminées (avec combinaison)
     const completedConsultations = consultations;
