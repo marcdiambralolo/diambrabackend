@@ -1,5 +1,5 @@
 // game-configuration.service.ts
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -862,6 +862,10 @@ export class GameConfigurationService {
    */
   async endEdition(id: string): Promise<GameConfigurationDocument> {
     const config = await this.findOne(id);
+
+    if (config.status === 'ended') {
+      throw new ConflictException(`L'édition ${id} est déjà terminée`);
+    }
 
     if (config.endgameDate > new Date()) {
       this.logger.warn(`Tentative de terminer une édition avant sa date de fin: ${id}`);

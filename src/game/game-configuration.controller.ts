@@ -34,7 +34,7 @@ export class GameConfigurationController {
         // Vérifier si l'édition est expirée
         const now = new Date();
         const endDate = new Date(activeConfig.endgameDate);
-        
+
         if (endDate < now && activeConfig.status === 'active') {
             // Mettre à jour le statut
             await this.service.endEdition(activeConfig._id.toString());
@@ -63,7 +63,7 @@ export class GameConfigurationController {
     @Get('last-ended')
     async getLastEndedConfig() {
         const lastEndedConfig = await this.service.findLastEnded();
-        
+
         if (!lastEndedConfig) {
             return {
                 success: true,
@@ -95,7 +95,7 @@ export class GameConfigurationController {
     @Get('last-ended/summary')
     async getLastEndedConfigSummary() {
         const lastEndedConfig = await this.service.findLastEnded();
-        
+
         if (!lastEndedConfig) {
             return {
                 success: true,
