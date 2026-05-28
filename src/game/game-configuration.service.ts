@@ -11,7 +11,7 @@ import { GameStatistics, PopulatedConsultation, Winner, WinningStats } from '@/c
 
 // Constantes pour la génération de combinaisons
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const SLOT_COUNT = 4;
+const SLOT_COUNT = 3;
 
 // utils/combination.utils.ts
 export class CombinationUtils {
@@ -82,7 +82,7 @@ export class GameConfigurationService {
   ) { }
 
   /**
-   * Génère une combinaison aléatoire unique de 4 chiffres
+   * Génère une combinaison aléatoire unique de 3 chiffres
    */
   private generateRandomCombination(): string {
     const shuffled = [...DIGITS];
