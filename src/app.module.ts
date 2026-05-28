@@ -26,6 +26,7 @@ import { UploadModule } from './uploads/upload.module';
 import { WalletModule } from './wallet/wallet.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { GameConfigurationModule } from './game/game-configuration.module';
+import { LearningModule } from './learning/learning.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { GameConfigurationModule } from './game/game-configuration.module';
     RedisModule,
     DoorsJobModule,
     GameConfigurationModule,
+    LearningModule,
   ],
   controllers: [AppController, DoorsJobController],
   providers: [
