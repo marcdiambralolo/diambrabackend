@@ -11,6 +11,7 @@ import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { WalletTransaction, WalletTransactionDocument } from '../wallet/schemas/wallet-transaction.schema';
 import { GameConfiguration, GameConfigurationDocument } from '@/game/schemas/game-configuration.schema';
+import { LearningConfiguration, LearningConfigurationDocument } from '@/learning/schemas/learning-configuration.schema';
 
 @Injectable()
 export class AdminService {
@@ -21,6 +22,8 @@ export class AdminService {
     @InjectModel(WalletTransaction.name) private walletTransactionModel: Model<WalletTransactionDocument>,
     @InjectModel(GameConfiguration.name)
     private gameConfigModel: Model<GameConfigurationDocument>,
+    @InjectModel(LearningConfiguration.name)
+    private learningConfigModel: Model<LearningConfigurationDocument>,
     private readonly configService: ConfigService,
   ) { }
 
@@ -488,6 +491,68 @@ export class AdminService {
     };
   }
 
+  async getActiveLearningConsultations(options: {
+    page: number;
+    limit: number;
+  }) {
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
+
+    // Trouver l'édition active (une seule)
+    const activeGameConfig = await this.learningConfigModel
+      .findOne({ status: 'active', isActive: true })
+      .select('_id startgameDate endgameDate status isActive')
+      .lean()
+      .exec();
+
+    console.log(activeGameConfig);
+
+    if (!activeGameConfig) {
+      return {
+        consultations: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+        activeEdition: null,
+      };
+    }
+
+    // Récupérer les consultations liées à cette édition active
+    const filter = { idjeu: activeGameConfig._id };
+
+    const [consultations, total] = await Promise.all([
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison timeSpent createdAt clientId')
+        .populate<{ clientId: any }>('clientId', 'username firstName lastName phone email country')
+        .populate('idjeu', 'startgameDate endgameDate status isActive')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.consultationModel.countDocuments(filter).exec(),
+    ]);
+
+
+
+    return {
+      consultations: consultations,
+      activeEdition: {
+        id: activeGameConfig._id.toString(),
+        startDate: activeGameConfig.startgameDate,
+        endDate: activeGameConfig.endgameDate,
+        status: activeGameConfig.status,
+        isActive: activeGameConfig.isActive,
+      },
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
 
   async getLastEndedGameStats2() {
     // Trouver la dernière édition terminée
@@ -610,7 +675,71 @@ export class AdminService {
     };
   }
 
+  async getLastEndedLearningStats() {
 
+    const lastEndedGameConfig = await this.learningConfigModel
+      .findOne({ status: 'ended' })
+      .sort({ updatedAt: -1, })
+      .select('_id startgameDate endgameDate status isActive updatedAt createdAt')
+      .exec();
+
+    if (!lastEndedGameConfig) {
+      return {
+        hasEndedEdition: false,
+        message: 'Aucune édition terminée trouvée',
+        editions: [],
+        latestEdition: null,
+        consultations: [],
+        stats: {
+          totalPlayers: 0,
+          completedPlayers: 0,
+          completionRate: 0,
+          inProgressPlayers: 0,
+        },
+      };
+    }
+
+    const consultations = await this.consultationModel
+      .find({ idjeu: lastEndedGameConfig._id })
+      .select('_id combinaison timeSpent createdAt clientId')
+      .populate('clientId', 'username firstName lastName phone  country')
+      .populate('idjeu', 'startgameDate endgameDate status isActive')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    // Filtrer les consultations terminées (avec combinaison)
+    const completedConsultations = consultations;
+    const totalPlayers = consultations.length;
+    const completedPlayers = completedConsultations.length;
+    const completionRate = totalPlayers > 0 ? (completedPlayers / totalPlayers) * 100 : 0;
+
+    const startDate = new Date(lastEndedGameConfig.startgameDate);
+    const endDate = new Date(lastEndedGameConfig.endgameDate);
+    const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      hasEndedEdition: true,
+      latestEdition: {
+        id: lastEndedGameConfig._id.toString(),
+        startDate: lastEndedGameConfig.startgameDate,
+        endDate: lastEndedGameConfig.endgameDate,
+        durationDays,
+        status: lastEndedGameConfig.status,
+        isActive: lastEndedGameConfig.isActive,
+        updatedAt: lastEndedGameConfig.updatedAt,
+        createdAt: lastEndedGameConfig.createdAt,
+      },
+      consultations,
+      stats: {
+        totalPlayers,
+        completedPlayers,
+        completionRate: Math.round(completionRate * 10) / 10,
+        inProgressPlayers: totalPlayers - completedPlayers,
+      },
+      lastUpdated: new Date().toISOString(),
+    };
+  }
 
   async getConsultations(options: {
     page?: number;

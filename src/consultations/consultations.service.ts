@@ -6,7 +6,8 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { Consultation, ConsultationDocument } from './schemas/consultation.schema';
 import { GameConfiguration, GameConfigurationDocument } from '@/game/schemas/game-configuration.schema';
-import { EndedGameConsultationsResult, StatisticsData } from '@/common/interfaces';
+import { EndedGameConsultationsResult, EndedLearningConsultationsResult, LearningStatisticsData, LearningWinnersData, StatisticsData } from '@/common/interfaces';
+import { LearningConfiguration, LearningConfigurationDocument } from '@/learning/schemas/learning-configuration.schema';
 
 @Injectable()
 export class ConsultationsService {
@@ -15,6 +16,8 @@ export class ConsultationsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(GameConfiguration.name)
     private gameConfigModel: Model<GameConfigurationDocument>,
+     @InjectModel(LearningConfiguration.name)
+    private learningConfigModel: Model<LearningConfigurationDocument>,
   ) { }
 
   private isPrivilegedConsultationRole(role: Role | undefined) {
@@ -646,6 +649,230 @@ async findByClient(
       totalPages: Math.ceil(total / limit),
     };
   }
+
+ 
+
+  async getEndedLearningConsultations(options: {
+  page: number;
+  limit: number;
+}): Promise<EndedLearningConsultationsResult> {
+  const { page, limit } = options;
+  const skip = (page - 1) * limit;
+
+  // 1. Trouver la dernière édition terminée
+  const endedGameConfig = await this.learningConfigModel
+    .findOne({ status: 'ended' })
+    .sort({ updatedAt: -1 })
+    .lean()
+    .exec();
+
+  if (!endedGameConfig) {
+    return {
+      consultations: [],
+      total: 0,
+      page,
+      limit,
+      totalPages: 0,
+      activeEdition: null,
+      winners: null,
+      statistics: null,
+    };
+  }
+
+  const winningCombination = endedGameConfig.winningCombination || null;
+  const filter = { idjeu: endedGameConfig._id };
+
+  // 2. Récupérer toutes les consultations pour l'édition
+  const [total, consultations, allConsultations] = await Promise.all([
+    this.consultationModel.countDocuments(filter).exec(),
+    this.consultationModel
+      .find(filter)
+      .select('_id combinaison timeSpent createdAt clientId')
+      .populate<{ clientId: any }>('clientId', 'username firstName lastName phone email country')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec(),
+    this.consultationModel
+      .find(filter)
+      .select('_id combinaison timeSpent createdAt clientId')
+      .populate<{ clientId: any }>('clientId', 'username firstName lastName phone email country')
+      .lean()
+      .exec()
+  ]);
+
+  // 3. Formater les consultations
+  const formattedConsultations = consultations.map(consultation => this.formatConsultation(consultation));
+
+  // 4. Calculer les gagnants et statistiques (basés sur le temps)
+  let winners = null;
+  let statistics = null;
+
+  if (allConsultations.length > 0) {
+    const formattedStatsData = allConsultations.map(item => this.formatConsultation(item));
+    winners = this.calculateLearningWinners(formattedStatsData);
+    statistics = this.calculateLearningStatistics(formattedStatsData, winners);
+  }
+
+  return {
+    consultations: formattedConsultations,
+    activeEdition: {
+      id: endedGameConfig._id.toString(),
+      startDate: endedGameConfig.startgameDate,
+      endDate: endedGameConfig.endgameDate,
+      status: endedGameConfig.status,
+      isActive: endedGameConfig.isActive,
+      winningCombination: winningCombination || null,
+    },
+    winners,
+    statistics,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+/**
+ * Formate une consultation
+ */
+private formatConsultation(consultation: any): any {
+  const consultationId = this.getObjectIdString(consultation._id);
+  const client = consultation.clientId;
+  let formattedClient = null;
+
+  if (client) {
+    formattedClient = {
+      _id: this.getObjectIdString(client._id),
+      username: client.username || 'Anonyme',
+      firstName: client.firstName || '',
+      lastName: client.lastName || '',
+      phone: client.phone || '',
+      email: client.email || '',
+      country: client.country || '',
+    };
+  }
+
+  return {
+    ...consultation,
+    _id: consultationId,
+    clientId: formattedClient,
+    timeSpent: consultation.timeSpent || 0,
+  };
+}
+
+/**
+ * Calcule les gagnants d'une édition Learning (basé sur le temps le plus petit)
+ */
+private calculateLearningWinners(consultations: any[]): LearningWinnersData {
+  // Filtrer les consultations valides
+  const validConsultations = consultations.filter(c => c.clientId && c.timeSpent > 0);
+  
+  // Grouper par client pour garder le meilleur temps de chaque joueur
+  const bestTimesByUser = new Map<string, any>();
+  
+  validConsultations.forEach(consultation => {
+    const clientId = this.getObjectIdString(consultation.clientId._id);
+    const existing = bestTimesByUser.get(clientId);
+    
+    if (!existing || consultation.timeSpent < existing.timeSpent) {
+      bestTimesByUser.set(clientId, {
+        consultationId: this.getObjectIdString(consultation._id),
+        clientId,
+        username: consultation.clientId.username || 'Anonyme',
+        firstName: consultation.clientId.firstName || '',
+        lastName: consultation.clientId.lastName || '',
+        phone: consultation.clientId.phone || '',
+        email: consultation.clientId.email || '',
+        country: consultation.clientId.country || '',
+        timeSpent: consultation.timeSpent,
+        combination: consultation.combinaison,
+        createdAt: consultation.createdAt,
+      });
+    }
+  });
+
+  // Convertir en tableau et trier par temps (du plus petit au plus grand)
+  const winners = Array.from(bestTimesByUser.values())
+    .sort((a, b) => a.timeSpent - b.timeSpent)
+    .map((winner, index) => ({
+      ...winner,
+      rank: index + 1,
+    }));
+
+  return {
+    winners,
+    totalParticipants: bestTimesByUser.size,
+  };
+}
+
+/**
+ * Calcule les statistiques complètes de l'édition Learning
+ */
+private calculateLearningStatistics(consultations: any[], winners: LearningWinnersData): LearningStatisticsData {
+  const validConsultations = consultations.filter(c => c.clientId && c.timeSpent > 0);
+  const times = validConsultations.map(c => c.timeSpent);
+  
+  // Top participants (ceux qui ont joué le plus)
+  const clientParticipation = new Map<string, { username: string; count: number; bestTime: number }>();
+  
+  validConsultations.forEach(c => {
+    const clientId = this.getObjectIdString(c.clientId._id);
+    const username = c.clientId.username || 'Anonyme';
+    const existing = clientParticipation.get(clientId);
+    
+    if (!existing) {
+      clientParticipation.set(clientId, {
+        username,
+        count: 1,
+        bestTime: c.timeSpent,
+      });
+    } else {
+      existing.count++;
+      if (c.timeSpent < existing.bestTime) {
+        existing.bestTime = c.timeSpent;
+      }
+    }
+  });
+
+  const topParticipants = Array.from(clientParticipation.entries())
+    .map(([clientId, data]) => ({
+      clientId,
+      username: data.username,
+      participations: data.count,
+      bestTime: data.bestTime,
+    }))
+    .sort((a, b) => b.participations - a.participations)
+    .slice(0, 10);
+
+  return {
+    totalConsultations: consultations.length,
+    totalParticipants: validConsultations.length,
+    uniqueParticipants: clientParticipation.size,
+    averageTimeSpent: times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0,
+    fastestTime: times.length > 0 ? Math.min(...times) : 0,
+    slowestTime: times.length > 0 ? Math.max(...times) : 0,
+    timeDistribution: {
+      under30s: times.filter(t => t < 30).length,
+      under60s: times.filter(t => t >= 30 && t < 60).length,
+      under120s: times.filter(t => t >= 60 && t < 120).length,
+      over120s: times.filter(t => t >= 120).length,
+    },
+    topParticipants,
+    winners,
+  };
+}
+
+/**
+ * Convertit un ObjectId en string
+ */
+private getObjectIdString(id: any): string {
+  if (!id) return '';
+  if (typeof id === 'object' && 'toString' in id) return id.toString();
+  if (typeof id === 'string') return id;
+  return String(id);
+}
 
   /**
    * Calcule les gagnants d'une édition (version corrigée)

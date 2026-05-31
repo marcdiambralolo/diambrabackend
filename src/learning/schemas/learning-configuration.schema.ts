@@ -24,7 +24,7 @@ export class LearningConfiguration {
     @Prop({ required: false })
     tpsglobal!: number;
 
-        @Prop({ required: false })
+    @Prop({ required: false })
     winningCombination!: string;
 
     @Prop({ required: false })

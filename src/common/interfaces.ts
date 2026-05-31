@@ -103,6 +103,66 @@ export interface EndedGameConsultationsResult {
   totalPages: number;
 }
 
+export interface EndedLearningConsultationsResult {
+  consultations: any[];
+  activeEdition: {
+    id: string;
+    startDate: Date;
+    endDate: Date;
+    status: string;
+    isActive: boolean;
+    winningCombination: string | null;
+  } | null;
+  winners: LearningWinnersData | null;
+  statistics: LearningStatisticsData | null;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface LearningWinner {
+  consultationId: string;
+  clientId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email?: string;
+  country?: string;
+  timeSpent: number;  // Le plus petit temps = gagnant
+  combination: string;
+  createdAt: Date;
+  rank: number;
+}
+
+export interface LearningWinnersData {
+  winners: LearningWinner[];  // Classement par temps (du plus rapide au plus lent)
+  totalParticipants: number;
+}
+
+export interface LearningStatisticsData {
+  totalConsultations: number;
+  totalParticipants: number;
+  uniqueParticipants: number;
+  averageTimeSpent: number;
+  fastestTime: number;
+  slowestTime: number;
+  timeDistribution: {
+    under30s: number;
+    under60s: number;
+    under120s: number;
+    over120s: number;
+  };
+  topParticipants: Array<{
+    clientId: string;
+    username: string;
+    participations: number;
+    bestTime: number;
+  }>;
+  winners: LearningWinnersData; 
+}
+
 
 export interface Winner {
   consultationId: string;

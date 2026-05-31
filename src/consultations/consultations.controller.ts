@@ -64,15 +64,15 @@ export class ConsultationsController {
     const result = await this.consultationsService.findByClient(user._id.toString(), { page, limit });
 
     return {
-    success: true,
-    userId: user._id,
-    consultations: result.consultations,
-    editions: result.editions, // 🔥 Ajout des informations des éditions
-    total: result.total,
-    page: result.page,
-    limit: result.limit,
-    totalPages: result.totalPages,
-  };
+      success: true,
+      userId: user._id,
+      consultations: result.consultations,
+      editions: result.editions, // 🔥 Ajout des informations des éditions
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
   }
 
   /**
@@ -99,23 +99,23 @@ export class ConsultationsController {
     );
 
     return {
-    success: true,
-    userId: user._id,
-    idjeu,
-    consultations: result.consultations,
-    edition: {  // 🔥 Ajout des informations de l'édition
-      id: result.edition!._id.toString(),
-      startDate: result.edition!.startgameDate,
-      endDate: result.edition!.endgameDate,
-      status: result.edition!.status,
-      isActive: result.edition!.isActive,
-      winningCombination: result.edition!.winningCombination || null,
-    },
-    total: result.total,
-    page: result.page,
-    limit: result.limit,
-    totalPages: result.totalPages,
-  };
+      success: true,
+      userId: user._id,
+      idjeu,
+      consultations: result.consultations,
+      edition: {  // 🔥 Ajout des informations de l'édition
+        id: result.edition!._id.toString(),
+        startDate: result.edition!.startgameDate,
+        endDate: result.edition!.endgameDate,
+        status: result.edition!.status,
+        isActive: result.edition!.isActive,
+        winningCombination: result.edition!.winningCombination || null,
+      },
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
   }
 
   // ============================================================================
@@ -269,6 +269,20 @@ export class ConsultationsController {
     @Query('limit') limit = '18',
   ) {
     const result = await this.consultationsService.getEndedGameConsultations({
+      page: parseInt(page as string, 10) || 1,
+      limit: parseInt(limit as string, 10) || 18,
+    });
+    return result;
+  }
+
+  @Get('ended-learning')
+  @ApiOperation({ summary: 'Récupérer les consultations du jeu actif (admin)' })
+  @ApiResponse({ status: 200, description: 'Liste des consultations du jeu actif' })
+  async getMyEndedLearningConsultations(
+    @Query('page') page = '1',
+    @Query('limit') limit = '18',
+  ) {
+    const result = await this.consultationsService.getEndedLearningConsultations({
       page: parseInt(page as string, 10) || 1,
       limit: parseInt(limit as string, 10) || 18,
     });

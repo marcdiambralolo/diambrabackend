@@ -97,6 +97,14 @@ export class AdminController {
     return result;
   }
 
+  @Get('last-ended-learning/stats')
+  @ApiOperation({ summary: 'Récupérer les statistiques du dernier jeu terminé (admin)' })
+  @ApiResponse({ status: 200, description: 'Statistiques du dernier jeu terminé' })
+  async getLastEndedLearningStats() {
+    const result = await this.adminService.getLastEndedLearningStats();
+    return result;
+  }
+
   @Get('consultations/active-game')
   @UseGuards(PermissionsGuard)
   @Permissions(Permission.READ_ANY_CONSULTATION)
@@ -107,6 +115,22 @@ export class AdminController {
     @Query('limit') limit = '18',
   ) {
     const result = await this.adminService.getActiveGameConsultations({
+      page: parseInt(page as string, 10) || 1,
+      limit: parseInt(limit as string, 10) || 18,
+    });
+    return result;
+  }
+
+  @Get('consultations/active-learning')
+  @UseGuards(PermissionsGuard)
+  @Permissions(Permission.READ_ANY_CONSULTATION)
+  @ApiOperation({ summary: 'Récupérer les consultations du jeu actif (admin)' })
+  @ApiResponse({ status: 200, description: 'Liste des consultations du jeu actif' })
+  async getActiveLearningConsultations(
+    @Query('page') page = '1',
+    @Query('limit') limit = '18',
+  ) {
+    const result = await this.adminService.getActiveLearningConsultations({
       page: parseInt(page as string, 10) || 1,
       limit: parseInt(limit as string, 10) || 18,
     });

@@ -8,6 +8,7 @@ import { ConsultationsController } from './consultations.controller';
 import { ConsultationsService } from './consultations.service';
 import { Consultation, ConsultationSchema } from './schemas/consultation.schema';
 import { GameConfiguration, GameConfigurationSchema } from '@/game/schemas/game-configuration.schema';
+import { LearningConfiguration, LearningConfigurationSchema } from '@/learning/schemas/learning-configuration.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { GameConfiguration, GameConfigurationSchema } from '@/game/schemas/game-
       { name: Consultation.name, schema: ConsultationSchema },
       { name: User.name, schema: UserSchema },
       { name: GameConfiguration.name, schema: GameConfigurationSchema },
+      {name:LearningConfiguration.name, schema: LearningConfigurationSchema},
     ]),
   ],
   controllers: [ConsultationsController,],
