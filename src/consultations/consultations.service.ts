@@ -211,6 +211,7 @@ export class ConsultationsService {
    * Mettre à jour une consultation
    */
   async update(id: string, updateConsultationDto: any) {
+    console.log(updateConsultationDto);
     const currentConsultation = await this.consultationModel.findById(id).exec();
 
     if (!currentConsultation) {
