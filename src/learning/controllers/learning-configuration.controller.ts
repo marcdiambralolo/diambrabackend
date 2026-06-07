@@ -105,17 +105,7 @@ export class LearningConfigurationController {
         const activeConfig = configs.find((c: LearningConfigurationDocument) => c.isActive && c.status === 'active');
 
         if (!activeConfig) {
-            const today = new Date();
-            const nextMonth = new Date(today);
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-            return {
-                id: '',
-                isActive: false,
-                status: 'pending',
-                startgameDate: today.toISOString(),
-                endgameDate: nextMonth.toISOString(),
-            };
+            return null;
         }
 
         // Vérifier si l'édition est expirée
