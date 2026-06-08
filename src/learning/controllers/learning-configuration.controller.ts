@@ -1,4 +1,3 @@
-// src/learning/controllers/learning-configuration.controller.ts
 import { Roles } from '@/common/decorators/roles.decorator';
 import { Role } from '@/common/enums/role.enum';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';

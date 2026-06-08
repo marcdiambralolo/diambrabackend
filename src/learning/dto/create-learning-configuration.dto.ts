@@ -1,4 +1,3 @@
-// src/learning/dto/create-learning-configuration.dto.ts
 import { IsArray, IsBoolean, IsDateString, IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateLearningConfigurationDto {
