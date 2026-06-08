@@ -111,7 +111,6 @@ export interface EndedLearningConsultationsResult {
     endDate: Date;
     status: string;
     isActive: boolean;
-    winningCombination: string | null;
   } | null;
   winners: LearningWinnersData | null;
   statistics: LearningStatisticsData | null;

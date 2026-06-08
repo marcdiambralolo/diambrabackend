@@ -8,6 +8,9 @@ export class CreateLearningConfigurationDto {
     @IsDateString()
     endgameDate!: string;
 
+    @IsDateString()
+    proclamationDate!: string;
+
     @IsOptional()
     @IsString()
     sequence?: string;

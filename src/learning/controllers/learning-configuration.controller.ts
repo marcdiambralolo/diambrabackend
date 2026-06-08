@@ -133,6 +133,7 @@ export class LearningConfigurationController {
             ),
             numeromatch: activeConfig.numeromatch,
             niveau: activeConfig.niveau,
+            proclamationDate: activeConfig.proclamationDate.toISOString(),
         };
     }
 

@@ -680,7 +680,6 @@ async findByClient(
     };
   }
 
-  const winningCombination = endedGameConfig.winningCombination || null;
   const filter = { idjeu: endedGameConfig._id };
 
   // 2. Récupérer toutes les consultations pour l'édition
@@ -724,7 +723,6 @@ async findByClient(
       endDate: endedGameConfig.endgameDate,
       status: endedGameConfig.status,
       isActive: endedGameConfig.isActive,
-      winningCombination: winningCombination || null,
     },
     winners,
     statistics,

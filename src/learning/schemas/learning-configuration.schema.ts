@@ -12,6 +12,9 @@ export class LearningConfiguration {
     @Prop({ required: true })
     endgameDate!: Date;
 
+    @Prop({ required: true })
+    proclamationDate!: Date;
+
     @Prop({ required: false })
     sequence!: string;
 
@@ -23,9 +26,6 @@ export class LearningConfiguration {
 
     @Prop({ required: false })
     tpsglobal!: number;
-
-    @Prop({ required: false })
-    winningCombination!: string;
 
     @Prop({ required: false })
     pieces!: string[];
