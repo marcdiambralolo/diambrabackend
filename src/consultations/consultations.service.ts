@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Role } from '../common/enums/role.enum';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { Consultation, ConsultationDocument } from './schemas/consultation.schema';
 import { GameConfiguration, GameConfigurationDocument } from '@/game/schemas/game-configuration.schema';
 import { EndedGameConsultationsResult, EndedLearningConsultationsResult, LearningStatisticsData, LearningWinnersData, StatisticsData } from '@/common/interfaces';
@@ -92,7 +91,7 @@ export class ConsultationsService {
   /**
    * Créer une nouvelle consultation
    */
-  async create(clientId: string, createConsultationDto: CreateConsultationDto) {
+  async create(clientId: string, createConsultationDto: any) {
    
     const { idjeu } = createConsultationDto;
 
@@ -110,6 +109,7 @@ export class ConsultationsService {
         idjeu: new Types.ObjectId(idjeu),        // Conversion explicite
         isPaid: true,
         country: "Cote d'ivoire",
+        ...createConsultationDto
     });
 
     await consultation.save();

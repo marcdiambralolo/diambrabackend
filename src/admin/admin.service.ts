@@ -524,7 +524,7 @@ export class AdminService {
     const [consultations, total] = await Promise.all([
       this.consultationModel
         .find(filter)
-        .select('_id combinaison timeSpent createdAt clientId')
+        .select('_id gameStartDate gameEndDate timeSpent createdAt idjeu clientId')
         .populate<{ clientId: any }>('clientId', 'username firstName lastName phone email country')
         .populate('idjeu', 'startgameDate endgameDate status isActive')
         .sort({ createdAt: -1 })
