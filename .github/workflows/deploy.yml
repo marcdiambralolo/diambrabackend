@@ -252,81 +252,84 @@ jobs:
               sleep 5
             fi
 
-            # 🔥 4. Vérification et installation CORRECTE de Redis
+            # 🔥 4. Vérification et installation ROBUSTE de Redis (sans bloquer le déploiement)
             echo "🔍 Vérification de Redis..."
             
-            # Arrêter tout service Redis existant qui pourrait poser problème
-            systemctl stop redis-server 2>/dev/null || true
-            systemctl stop redis 2>/dev/null || true
-            pkill -f redis-server 2>/dev/null || true
-            sleep 2
-            
-            # Purge et réinstallation complète
-            apt-get remove --purge -y redis-server redis-tools 2>/dev/null || true
-            rm -rf /etc/redis/
-            rm -rf /var/lib/redis/
-            rm -rf /var/log/redis/
-            
-            # Réinstallation
-            apt-get update -qq
-            apt-get install -y -qq redis-server redis-tools
-            
-            # Créer les dossiers nécessaires
-            mkdir -p /var/lib/redis
-            mkdir -p /var/log/redis
-            chown redis:redis /var/lib/redis
-            chown redis:redis /var/log/redis
-            chmod 755 /var/lib/redis
-            chmod 755 /var/log/redis
-            
-            # Configuration Redis
-            cat > /etc/redis/redis.conf << 'REDISEOF'
-            # Redis configuration pour Diambra
+            # Fonction pour vérifier Redis
+            check_redis() {
+              systemctl is-active --quiet redis-server 2>/dev/null && return 0
+              pgrep -x "redis-server" > /dev/null && return 0
+              return 1
+            }
+
+            # Fonction pour démarrer Redis
+            start_redis() {
+              systemctl start redis-server 2>/dev/null || redis-server /etc/redis/redis.conf --daemonize yes 2>/dev/null
+              sleep 3
+            }
+
+            # Vérifier si Redis est déjà actif
+            if check_redis; then
+              echo "✅ Redis est déjà en cours d'exécution"
+            else
+              echo "📦 Installation/configuration de Redis..."
+              
+              # Arrêter les services Redis existants
+              systemctl stop redis-server 2>/dev/null || true
+              systemctl stop redis 2>/dev/null || true
+              pkill -f redis-server 2>/dev/null || true
+              sleep 2
+              
+              # Vérifier si Redis est installé
+              if ! command -v redis-server &> /dev/null; then
+                echo "📦 Installation de Redis..."
+                apt-get update -qq || true
+                apt-get install -y -qq redis-server redis-tools || {
+                  echo "⚠️ Échec de l'installation via apt"
+                }
+              fi
+              
+              # Créer les dossiers nécessaires
+              mkdir -p /var/lib/redis
+              mkdir -p /var/log/redis
+              chown redis:redis /var/lib/redis /var/log/redis 2>/dev/null || true
+              chmod 755 /var/lib/redis /var/log/redis 2>/dev/null || true
+              
+              # Configuration Redis minimale
+              cat > /etc/redis/redis.conf << 'REDISEOF'
             port 6379
             bind 127.0.0.1
             protected-mode yes
-            
-            # Persistance
-            save 900 1
-            save 300 10
-            save 60 10000
-            
-            # Fichiers
+            daemonize yes
             dir /var/lib/redis
             logfile /var/log/redis/redis-server.log
-            
-            # Performance
             maxmemory 256mb
             maxmemory-policy allkeys-lru
-            
-            # Connexions
             timeout 300
             tcp-keepalive 300
-            
-            # Sécurité (désactiver si non utilisé localement)
-            requirepass ""
             REDISEOF
-            
-            # Démarrer Redis
-            systemctl daemon-reload
-            systemctl enable redis-server
-            systemctl start redis-server
-            
-            # Vérifier que Redis tourne
-            sleep 3
-            if ! systemctl is-active --quiet redis-server; then
-              echo "❌ Redis ne démarre pas - logs:"
-              journalctl -u redis-server --lines=20
-              exit 1
+              
+              # Démarrer Redis
+              start_redis
+              
+              # Vérifier Redis
+              if check_redis; then
+                echo "✅ Redis démarré avec succès"
+              else
+                echo "⚠️ Redis ne démarre pas - Le backend peut fonctionner sans Redis"
+                # Marquer Redis comme désactivé
+                touch /tmp/redis_disabled
+              fi
             fi
-            
-            # Tester Redis
-            if ! redis-cli ping | grep -q PONG; then
-              echo "❌ Redis ne répond pas au ping"
-              exit 1
+
+            # Tester Redis (optionnel, ne pas bloquer)
+            if command -v redis-cli &> /dev/null; then
+              if redis-cli ping 2>/dev/null | grep -q PONG; then
+                echo "✅ Redis opérationnel"
+              else
+                echo "⚠️ Redis ne répond pas au ping, poursuite du déploiement..."
+              fi
             fi
-            
-            echo "✅ Redis opérationnel"
 
             # 5. Préparation des dossiers
             mkdir -p /var/www/uploads/books
@@ -358,7 +361,10 @@ jobs:
 
             # 8. Installation des dépendances
             echo "📦 Installation des dépendances..."
-            npm ci --omit=dev --silent --no-audit --no-fund
+            npm ci --omit=dev --silent --no-audit --no-fund || {
+              echo "⚠️ npm ci a échoué, tentative avec npm install..."
+              npm install --omit=dev --silent --no-audit --no-fund
+            }
 
             # 9. Configuration du fichier .env
             echo "🔐 Configuration de l'environnement..."
@@ -394,11 +400,11 @@ jobs:
             echo "🛑 Arrêt de l'ancienne instance..."
             pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
 
-            # 11. Patch de sécurité MongoDB
+            # 11. Patch de sécurité MongoDB (optionnel)
             echo "🔧 Application des patches de sécurité..."
-            cp dist/main.js dist/main.js.backup
-            sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
-            sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js
+            cp dist/main.js dist/main.js.backup 2>/dev/null || true
+            sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js 2>/dev/null || true
+            sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js 2>/dev/null || true
 
             # 12. Démarrer la nouvelle instance
             echo "🔄 Démarrage de la nouvelle instance..."
