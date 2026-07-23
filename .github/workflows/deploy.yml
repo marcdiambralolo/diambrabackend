@@ -202,7 +202,7 @@ jobs:
             set -e
 
             echo "========================================="
-            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA (v7 - Final)"
+            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA"
             echo "📅 $(date)"
             echo "🆔 Déploiement ID: ${{ env.DEPLOY_TIMESTAMP }}"
             echo "========================================="
@@ -234,7 +234,7 @@ jobs:
               ls -t backups/ | tail -n +11 | xargs -r rm -rf
             fi
 
-            # 3. Vérification de MongoDB
+            # 3. Vérification et installation de MongoDB
             echo "🔍 Vérification de MongoDB..."
             if ! command -v mongod &> /dev/null; then
               echo "📦 Installation de MongoDB..."
@@ -252,18 +252,81 @@ jobs:
               sleep 5
             fi
 
-            # 4. Vérification de Redis
+            # 🔥 4. Vérification et installation CORRECTE de Redis
             echo "🔍 Vérification de Redis..."
-            if ! command -v redis-server &> /dev/null; then
-              echo "📦 Installation de Redis..."
-              apt-get install -y -qq redis-server
-            fi
-
+            
+            # Arrêter tout service Redis existant qui pourrait poser problème
+            systemctl stop redis-server 2>/dev/null || true
+            systemctl stop redis 2>/dev/null || true
+            pkill -f redis-server 2>/dev/null || true
+            sleep 2
+            
+            # Purge et réinstallation complète
+            apt-get remove --purge -y redis-server redis-tools 2>/dev/null || true
+            rm -rf /etc/redis/
+            rm -rf /var/lib/redis/
+            rm -rf /var/log/redis/
+            
+            # Réinstallation
+            apt-get update -qq
+            apt-get install -y -qq redis-server redis-tools
+            
+            # Créer les dossiers nécessaires
+            mkdir -p /var/lib/redis
+            mkdir -p /var/log/redis
+            chown redis:redis /var/lib/redis
+            chown redis:redis /var/log/redis
+            chmod 755 /var/lib/redis
+            chmod 755 /var/log/redis
+            
+            # Configuration Redis
+            cat > /etc/redis/redis.conf << 'REDISEOF'
+            # Redis configuration pour Diambra
+            port 6379
+            bind 127.0.0.1
+            protected-mode yes
+            
+            # Persistance
+            save 900 1
+            save 300 10
+            save 60 10000
+            
+            # Fichiers
+            dir /var/lib/redis
+            logfile /var/log/redis/redis-server.log
+            
+            # Performance
+            maxmemory 256mb
+            maxmemory-policy allkeys-lru
+            
+            # Connexions
+            timeout 300
+            tcp-keepalive 300
+            
+            # Sécurité (désactiver si non utilisé localement)
+            requirepass ""
+            REDISEOF
+            
+            # Démarrer Redis
+            systemctl daemon-reload
+            systemctl enable redis-server
+            systemctl start redis-server
+            
+            # Vérifier que Redis tourne
+            sleep 3
             if ! systemctl is-active --quiet redis-server; then
-              systemctl start redis-server
-              systemctl enable redis-server
-              sleep 2
+              echo "❌ Redis ne démarre pas - logs:"
+              journalctl -u redis-server --lines=20
+              exit 1
             fi
+            
+            # Tester Redis
+            if ! redis-cli ping | grep -q PONG; then
+              echo "❌ Redis ne répond pas au ping"
+              exit 1
+            fi
+            
+            echo "✅ Redis opérationnel"
 
             # 5. Préparation des dossiers
             mkdir -p /var/www/uploads/books
