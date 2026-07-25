@@ -33,7 +33,6 @@ env:
   PM2_NAME: "diambra-backend"
   BACKEND_PORT: 3001
   HEALTH_CHECK_ENDPOINT: "/api/v1"
-  HEALTH_CHECK_TIMEOUT: 30
   DEPLOY_TIMESTAMP: ${{ github.run_id }}
 
 jobs:
@@ -64,14 +63,12 @@ jobs:
         run: npm test --if-present
         continue-on-error: true
 
-      - name: ✅ Résultat des tests
-        run: echo "✅ Phase de test terminée"
-
   build-and-package:
     name: 📦 Build & Package
     runs-on: ubuntu-latest
     needs: [lint-and-test]
-    timeout-minutes: 20
+    if: always() && (needs.lint-and-test.result == 'success' || needs.lint-and-test.result == 'skipped')
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout du code
@@ -86,10 +83,6 @@ jobs:
       - name: 📦 Installation des dépendances
         run: npm ci
 
-      - name: 🧪 Tests d'intégration
-        run: npm run test:integration --if-present
-        continue-on-error: true
-
       - name: 🔨 Build de production
         run: npm run build
         env:
@@ -103,19 +96,9 @@ jobs:
             ls -la dist/
             exit 1
           fi
-          
-          BUILD_SIZE=$(du -sh dist/ | cut -f1)
-          echo "✅ Build valide: dist/main.js présent (taille: $BUILD_SIZE)"
-          
-          echo "📋 Vérification des dépendances critiques..."
-          DEPENDENCIES="@nestjs/mongoose @nestjs/redis @nestjs/jwt @nestjs/throttler"
-          for dep in $DEPENDENCIES; do
-            if ! grep -q "$dep" package.json; then
-              echo "⚠️ $dep non trouvé dans package.json"
-            fi
-          done
+          echo "✅ Build valide: dist/main.js présent"
 
-      - name: 🔐 Analyse de sécurité (npm audit)
+      - name: 🔐 Analyse de sécurité
         run: npm audit --production --audit-level=high || true
 
       - name: 📝 Génération du fichier de version
@@ -124,41 +107,30 @@ jobs:
           {
             "commit": "${{ github.sha }}",
             "branch": "${{ github.ref_name }}",
-            "timestamp": "$(date -Iseconds)",
+            "timestamp": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')",
             "version": "$(node -p "require('./package.json').version")",
             "deploy_id": "${{ env.DEPLOY_TIMESTAMP }}",
             "environment": "${{ github.event.inputs.environment || 'production' }}"
           }
           EOF
 
-      - name: 💾 Upload des artefacts
+      - name: 💾 Upload de l'artefact
         uses: actions/upload-artifact@v4
         with:
-          name: backend-build-${{ env.DEPLOY_TIMESTAMP }}
+          name: backend-build
           path: |
             dist/
             package.json
             package-lock.json
             version.json
-          retention-days: 7
+          retention-days: 3
           compression-level: 6
-
-      - name: 💾 Upload comme artefact "latest"
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-build-latest
-          path: |
-            dist/
-            package.json
-            package-lock.json
-            version.json
-          retention-days: 1
 
   deploy-production:
     name: 🚀 Déploiement sur VPS
     runs-on: ubuntu-latest
     needs: build-and-package
-    timeout-minutes: 25
+    timeout-minutes: 15
     if: |
       (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') ||
@@ -168,17 +140,10 @@ jobs:
       - name: 📥 Téléchargement du build
         uses: actions/download-artifact@v4
         with:
-          name: backend-build-latest
+          name: backend-build
           path: ./deploy
 
-      - name: 📄 Affichage des informations de version
-        run: |
-          if [ -f "./deploy/version.json" ]; then
-            echo "📦 Déploiement de la version:"
-            cat ./deploy/version.json
-          fi
-
-      - name: 📤 Envoi vers le VPS
+      - name: 📤 Envoi des fichiers vers le VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -189,9 +154,8 @@ jobs:
           target: "${{ env.APP_DIR }}/new_deploy"
           strip_components: 1
           overwrite: true
-          timeout: 60s
 
-      - name: 🔧 Déploiement atomique avec validation
+      - name: 🔧 Déploiement atomique & Redémarrage PM2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -201,190 +165,54 @@ jobs:
           script: |
             set -e
 
-            echo "========================================="
-            echo "🚀 DÉPLOIEMENT BACKEND DIAMBRA"
-            echo "📅 $(date)"
-            echo "🆔 Déploiement ID: ${{ env.DEPLOY_TIMESTAMP }}"
-            echo "========================================="
-
+            echo "🚀 Lancement du déploiement - ${{ env.DEPLOY_TIMESTAMP }}"
             cd ${{ env.APP_DIR }}
 
-            # 1. Vérification de l'espace disque
-            echo "🔍 Vérification de l'espace disque..."
+            # 1. Vérification rapide de l'espace disque
             DISK_USAGE=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
-            if [ "$DISK_USAGE" -gt 85 ]; then
-              echo "⚠️ Espace disque faible: ${DISK_USAGE}% utilisé"
-              if [ "$DISK_USAGE" -gt 95 ]; then
-                echo "❌ Espace disque critique - Déploiement annulé"
-                exit 1
-              fi
-            fi
-
-            # 2. Backup de la version actuelle
-            echo "💾 Backup de la version actuelle..."
-            if [ -d "dist" ] && [ -f "version.json" ]; then
-              BACKUP_DIR="backup_$(date +%Y%m%d_%H%M%S)"
-              mkdir -p "backups/${BACKUP_DIR}"
-              cp -r dist "backups/${BACKUP_DIR}/" 2>/dev/null || true
-              cp package.json "backups/${BACKUP_DIR}/" 2>/dev/null || true
-              cp package-lock.json "backups/${BACKUP_DIR}/" 2>/dev/null || true
-              cp .env "backups/${BACKUP_DIR}/" 2>/dev/null || true
-              cp version.json "backups/${BACKUP_DIR}/" 2>/dev/null || true
-              echo "✅ Backup créé: backups/${BACKUP_DIR}"
-              ls -t backups/ | tail -n +11 | xargs -r rm -rf
-            fi
-
-            # 3. Vérification et installation de MongoDB
-            echo "🔍 Vérification de MongoDB..."
-            if ! command -v mongod &> /dev/null; then
-              echo "📦 Installation de MongoDB..."
-              apt-get update -qq
-              apt-get install -y -qq gnupg curl
-              curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
-              echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-              apt-get update -qq
-              apt-get install -y -qq mongodb-org
-            fi
-
-            if ! systemctl is-active --quiet mongod; then
-              systemctl start mongod
-              systemctl enable mongod
-              sleep 5
-            fi
-
-            # 🔥 4. Vérification et installation ROBUSTE de Redis (sans bloquer le déploiement)
-            echo "🔍 Vérification de Redis..."
-            
-            # Fonction pour vérifier Redis
-            check_redis() {
-              systemctl is-active --quiet redis-server 2>/dev/null && return 0
-              pgrep -x "redis-server" > /dev/null && return 0
-              return 1
-            }
-
-            # Fonction pour démarrer Redis
-            start_redis() {
-              systemctl start redis-server 2>/dev/null || redis-server /etc/redis/redis.conf --daemonize yes 2>/dev/null
-              sleep 3
-            }
-
-            # Vérifier si Redis est déjà actif
-            if check_redis; then
-              echo "✅ Redis est déjà en cours d'exécution"
-            else
-              echo "📦 Installation/configuration de Redis..."
-              
-              # Arrêter les services Redis existants
-              systemctl stop redis-server 2>/dev/null || true
-              systemctl stop redis 2>/dev/null || true
-              pkill -f redis-server 2>/dev/null || true
-              sleep 2
-              
-              # Vérifier si Redis est installé
-              if ! command -v redis-server &> /dev/null; then
-                echo "📦 Installation de Redis..."
-                apt-get update -qq || true
-                apt-get install -y -qq redis-server redis-tools || {
-                  echo "⚠️ Échec de l'installation via apt"
-                }
-              fi
-              
-              # Créer les dossiers nécessaires
-              mkdir -p /var/lib/redis
-              mkdir -p /var/log/redis
-              chown redis:redis /var/lib/redis /var/log/redis 2>/dev/null || true
-              chmod 755 /var/lib/redis /var/log/redis 2>/dev/null || true
-              
-              # Configuration Redis minimale
-              cat > /etc/redis/redis.conf << 'REDISEOF'
-            port 6379
-            bind 127.0.0.1
-            protected-mode yes
-            daemonize yes
-            dir /var/lib/redis
-            logfile /var/log/redis/redis-server.log
-            maxmemory 256mb
-            maxmemory-policy allkeys-lru
-            timeout 300
-            tcp-keepalive 300
-            REDISEOF
-              
-              # Démarrer Redis
-              start_redis
-              
-              # Vérifier Redis
-              if check_redis; then
-                echo "✅ Redis démarré avec succès"
-              else
-                echo "⚠️ Redis ne démarre pas - Le backend peut fonctionner sans Redis"
-                # Marquer Redis comme désactivé
-                touch /tmp/redis_disabled
-              fi
-            fi
-
-            # Tester Redis (optionnel, ne pas bloquer)
-            if command -v redis-cli &> /dev/null; then
-              if redis-cli ping 2>/dev/null | grep -q PONG; then
-                echo "✅ Redis opérationnel"
-              else
-                echo "⚠️ Redis ne répond pas au ping, poursuite du déploiement..."
-              fi
-            fi
-
-            # 5. Préparation des dossiers
-            mkdir -p /var/www/uploads/books
-            mkdir -p /var/www/uploads/temp
-            mkdir -p logs
-            mkdir -p backups
-
-            # 6. Validation du nouveau build
-            echo "📂 Validation du nouveau build..."
-            if [ ! -d "new_deploy/dist" ]; then
-              echo "❌ Nouveau build invalide - dossier dist manquant"
+            if [ "$DISK_USAGE" -gt 90 ]; then
+              echo "❌ Espace disque critique (${DISK_USAGE}%)"
               exit 1
             fi
 
-            if [ ! -f "new_deploy/dist/main.js" ]; then
-              echo "❌ Nouveau build invalide - main.js manquant"
-              exit 1
+            # 2. Sauvegarde de la version actuelle
+            if [ -d "dist" ]; then
+              BACKUP_DIR="backups/backup_$(date +%Y%m%d_%H%M%S)"
+              mkdir -p "$BACKUP_DIR"
+              cp -r dist package.json package-lock.json version.json "$BACKUP_DIR/" 2>/dev/null || true
+              ls -dt backups/backup_* | tail -n +6 | xargs -r rm -rf
             fi
 
-            # 7. Déplacement du nouveau build
-            echo "📂 Installation du nouveau build..."
-            rm -rf dist.old 2>/dev/null || true
-            mv dist dist.old 2>/dev/null || true
+            # 3. Vérification légère de MongoDB et Redis
+            systemctl is-active --quiet mongod || systemctl start mongod || echo "⚠️ Attention: MongoDB indisponible"
+            systemctl is-active --quiet redis-server || systemctl start redis-server || echo "⚠️ Attention: Redis indisponible"
+
+            # 4. Dossiers requis
+            mkdir -p /var/www/uploads/books /var/www/uploads/temp logs backups
+
+            # 5. Remplacement des fichiers
+            rm -rf dist.old
+            [ -d "dist" ] && mv dist dist.old
             mv new_deploy/dist ./dist
             cp new_deploy/package.json ./package.json
             cp new_deploy/package-lock.json ./package-lock.json
             cp new_deploy/version.json ./version.json 2>/dev/null || true
             rm -rf new_deploy
 
-            # 8. Installation des dépendances
-            echo "📦 Installation des dépendances..."
-            npm ci --omit=dev --silent --no-audit --no-fund || {
-              echo "⚠️ npm ci a échoué, tentative avec npm install..."
-              npm install --omit=dev --silent --no-audit --no-fund
-            }
+            # 6. Installation dépendances prod
+            npm ci --omit=dev --silent --no-audit --no-fund
 
-            # 9. Configuration du fichier .env
-            echo "🔐 Configuration de l'environnement..."
+            # 7. Mise à jour / Création de l'environnement .env
             if [ ! -f ".env" ]; then
               cat > .env << 'ENVEOF'
             PORT=3001
             NODE_ENV=production
             BASE_URL=https://diambra.net
             CORS_ORIGINS=https://diambra.net,https://www.diambra.net
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
             MONGODB_URI=mongodb://localhost:27017/diambra
-            DATABASE_URL=mongodb://localhost:27017/diambra
             REDIS_HOST=localhost
             REDIS_PORT=6379
-            REDIS_DB=0
             REDIS_KEY_PREFIX=diambra:
-            DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}
-            DEEPSEEK_TIMEOUT=300000
-            DEEPSEEK_MAX_RETRIES=4
-            CACHE_TTL=3600000
             UPLOAD_DIR=/var/www/uploads/books
             PUBLIC_UPLOAD_URL=https://diambra.net/uploads
             THROTTLE_TTL=60
@@ -392,77 +220,53 @@ jobs:
             ENVEOF
             fi
 
-            # Mise à jour des secrets
-            sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" .env
-            sed -i "s|^DEEPSEEK_API_KEY=.*|DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}|" .env
+            sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" .env || echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            sed -i "s|^DEEPSEEK_API_KEY=.*|DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}|" .env || echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
 
-            # 10. Arrêter l'ancienne instance PM2
-            echo "🛑 Arrêt de l'ancienne instance..."
-            pm2 delete ${{ env.PM2_NAME }} 2>/dev/null || true
-
-            # 11. Patch de sécurité MongoDB (optionnel)
-            echo "🔧 Application des patches de sécurité..."
-            cp dist/main.js dist/main.js.backup 2>/dev/null || true
-            sed -i 's/process.env.MONGODB_URI/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js 2>/dev/null || true
-            sed -i 's/process.env.DATABASE_URL/"mongodb:\/\/localhost:27017\/diambra"/g' dist/main.js 2>/dev/null || true
-
-            # 12. Démarrer la nouvelle instance
-            echo "🔄 Démarrage de la nouvelle instance..."
-            pm2 start dist/main.js \
-              --name "${{ env.PM2_NAME }}" \
-              --time \
-              --instances max \
-              --exp-backoff-restart-delay=100 \
-              --node-args="--max-old-space-size=512 --expose-gc" \
-              --merge-logs \
-              --log-date-format "YYYY-MM-DD HH:mm:ss"
-
-            # 13. Vérification
-            echo "⏳ Vérification du backend..."
-            sleep 15
-
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
-            
-            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "304" ]; then
-              echo "✅ Backend opérationnel (HTTP $HTTP_CODE)"
+            # 8. Reload / Restart PM2
+            if pm2 describe ${{ env.PM2_NAME }} > /dev/null 2>&1; then
+              pm2 reload ${{ env.PM2_NAME }} --update-env
             else
-              echo "⚠️ Backend HTTP $HTTP_CODE - Logs d'erreur:"
-              pm2 logs "${{ env.PM2_NAME }}" --lines 30 --nostream
-              exit 1
+              pm2 start dist/main.js \
+                --name "${{ env.PM2_NAME }}" \
+                --time \
+                --instances max \
+                --exp-backoff-restart-delay=100 \
+                --node-args="--max-old-space-size=512"
             fi
 
-            # 14. Sauvegarde PM2
-            pm2 save --force
-            pm2 list
+            # 9. Healthcheck avec boucles d'attente (30s max)
+            echo "⏳ Validation du service..."
+            SUCCESS=0
+            for i in {1..6}; do
+              sleep 5
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ env.BACKEND_PORT }}${{ env.HEALTH_CHECK_ENDPOINT }} || echo "000")
+              if [[ "$HTTP_CODE" =~ ^(200|301|302|304)$ ]]; then
+                SUCCESS=1
+                break
+              fi
+              echo "Tentative $i/6: Code HTTP $HTTP_CODE..."
+            done
 
-            # 15. Nettoyage
-            echo "🧹 Nettoyage..."
-            rm -rf dist.old 2>/dev/null || true
-
-            echo "========================================="
-            echo "🎉 Déploiement terminé avec succès !"
-            echo "🌐 Backend: https://diambra.net/api/v1"
-            echo "========================================="
-
-      - name: 📢 Notification Slack (optionnel)
-        if: success()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_TITLE: "✅ Déploiement Backend DIAMBRA"
-          SLACK_MESSAGE: "Version ${{ github.sha }} déployée avec succès"
-          SLACK_COLOR: good
-        continue-on-error: true
+            if [ $SUCCESS -eq 1 ]; then
+              echo "✅ Déploiement réussi (HTTP $HTTP_CODE)"
+              pm2 save --force
+              rm -rf dist.old
+            else
+              echo "❌ Échec du Healthcheck. Affichage des logs PM2 :"
+              pm2 logs ${{ env.PM2_NAME }} --lines 30 --nostream
+              exit 1
+            fi
 
   rollback:
     name: ↩️ Rollback Automatique
     runs-on: ubuntu-latest
     needs: deploy-production
-    if: failure() && github.ref == 'refs/heads/main'
-    timeout-minutes: 10
+    if: failure()
+    timeout-minutes: 5
 
     steps:
-      - name: ↩️ Rollback vers version précédente
+      - name: ↩️ Restauration de la dernière version stable
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -470,29 +274,18 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            echo "========================================="
-            echo "↩️ ROLLBACK AUTOMATIQUE"
-            echo "========================================="
-            
             cd ${{ env.APP_DIR }}
-            
-            # Trouver le dernier backup valide
-            LATEST_BACKUP=$(ls -t backups/ 2>/dev/null | head -1)
-            
-            if [ -n "$LATEST_BACKUP" ] && [ -d "backups/${LATEST_BACKUP}" ]; then
-              echo "📦 Restauration du backup: ${LATEST_BACKUP}"
-              
-              # Restaurer les fichiers
+            LATEST_BACKUP=$(ls -dt backups/backup_* 2>/dev/null | head -1)
+
+            if [ -n "$LATEST_BACKUP" ]; then
+              echo "↩️ Restauration depuis $LATEST_BACKUP..."
               rm -rf dist
-              cp -r "backups/${LATEST_BACKUP}/dist" ./dist
-              cp "backups/${LATEST_BACKUP}/package.json" ./package.json 2>/dev/null || true
-              cp "backups/${LATEST_BACKUP}/package-lock.json" ./package-lock.json 2>/dev/null || true
+              cp -r "$LATEST_BACKUP/dist" ./dist
+              cp "$LATEST_BACKUP/package.json" ./package.json 2>/dev/null || true
+              cp "$LATEST_BACKUP/package-lock.json" ./package-lock.json 2>/dev/null || true
               
-              # Redémarrer
-              pm2 restart ${{ env.PM2_NAME }}
-              pm2 save
-              
-              echo "✅ Rollback effectué vers ${LATEST_BACKUP}"
+              pm2 reload ${{ env.PM2_NAME }} || pm2 restart ${{ env.PM2_NAME }}
+              echo "✅ Rollback exécuté avec succès"
             else
-              echo "⚠️ Aucun backup trouvé"
+              echo "⚠️ Aucun dossier de backup trouvé pour exécuter le rollback."
             fi

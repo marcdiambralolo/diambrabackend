@@ -21,7 +21,6 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { UserDocument } from '../users/schemas/user.schema';
 import { ConsultationsService } from './consultations.service';
-import { UpdateConsultationDto } from './dto/update-consultation.dto';
 
 @ApiTags('Consultations')
 @Controller('consultations')
@@ -320,7 +319,7 @@ export class ConsultationsController {
    * Mettre à jour une consultation
    */
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateConsultationDto: UpdateConsultationDto) {
+  update(@Param('id') id: string, @Body() updateConsultationDto: any) {
     return this.consultationsService.update(id, updateConsultationDto).then((consultation) => ({
       success: true,
       consultation,

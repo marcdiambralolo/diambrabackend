@@ -688,7 +688,7 @@ async findByClient(
     this.consultationModel
       .find(filter)
       .select('_id combinaison timeSpent createdAt clientId')
-      .populate<{ clientId: any }>('clientId', 'username firstName lastName phone email country')
+      .populate<{ clientId: any }>('clientId', 'username nom prenoms firstName lastName phone email country')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -697,7 +697,7 @@ async findByClient(
     this.consultationModel
       .find(filter)
       .select('_id combinaison timeSpent createdAt clientId')
-      .populate<{ clientId: any }>('clientId', 'username firstName lastName phone email country')
+      .populate<{ clientId: any }>('clientId', 'username nom prenoms firstName lastName phone email country')
       .lean()
       .exec()
   ]);
