@@ -18,7 +18,7 @@ import { User, UserSchema } from '../users/schemas/user.schema';
       useFactory: (configService: ConfigService) => {
         // Get values from env or use defaults in seconds
         const jwtSecret = configService.get<string>('JWT_SECRET') || 'fallback-secret';
-        const jwtExpiration = configService.get<number>('JWT_EXPIRATION') || 604800; // 7 days
+        const jwtExpiration = configService.get<number>('JWT_EXPIRATION') || 604800000; // 7 days
         
         return {
           secret: jwtSecret,
