@@ -29,12 +29,16 @@ export class AuthService {
     private readonly redisService: RedisService,
   ) { }
 
-  private getAccessTokenTtlSeconds() {
-    return Number(this.configService.get<number>('JWT_EXPIRATION') || 604800);
+  private getAccessTokenTtlSeconds(): number {
+    const value = this.configService.get<number>('JWT_EXPIRATION') || 604800;
+    const parsed = Number(value);
+    return isNaN(parsed) ? 604800 : parsed;
   }
 
-  private getRefreshTokenTtlSeconds() {
-    return Number(this.configService.get<number>('JWT_REFRESH_EXPIRATION') || 2592000);
+  private getRefreshTokenTtlSeconds(): number {
+    const value = this.configService.get<number>('JWT_REFRESH_EXPIRATION') || 2592000;
+    const parsed = Number(value);
+    return isNaN(parsed) ? 2592000 : parsed;
   }
 
   private getCookieSameSite(): 'lax' | 'strict' | 'none' {
@@ -67,12 +71,15 @@ export class AuthService {
   }
 
   private buildCookieOptions(maxAgeMs: number) {
+    // S'assurer que maxAgeMs est un nombre valide
+    const validMaxAge = isNaN(maxAgeMs) ? 604800000 : maxAgeMs;
+    
     return {
       httpOnly: true,
       secure: this.isSecureCookieEnabled(),
       sameSite: this.getCookieSameSite(),
       path: '/',
-      maxAge: maxAgeMs,
+      maxAge: validMaxAge,
       domain: this.getCookieDomain(),
     } as const;
   }
@@ -124,16 +131,23 @@ export class AuthService {
   }
 
   private setSessionCookies(response: Response, accessToken: string, refreshToken: string) {
+    const accessTtl = this.getAccessTokenTtlSeconds();
+    const refreshTtl = this.getRefreshTokenTtlSeconds();
+    
+    // S'assurer que les TTL sont valides
+    const validAccessTtl = isNaN(accessTtl) ? 604800 : accessTtl;
+    const validRefreshTtl = isNaN(refreshTtl) ? 2592000 : refreshTtl;
+    
     response.setHeader('Cache-Control', 'no-store');
     response.cookie(
       this.accessCookieName,
       accessToken,
-      this.buildCookieOptions(this.getAccessTokenTtlSeconds() * 1000),
+      this.buildCookieOptions(validAccessTtl * 1000),
     );
     response.cookie(
       this.refreshCookieName,
       refreshToken,
-      this.buildCookieOptions(this.getRefreshTokenTtlSeconds() * 1000),
+      this.buildCookieOptions(validRefreshTtl * 1000),
     );
   }
 
@@ -268,12 +282,12 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<number>('JWT_EXPIRATION') || 604800, // 7 days
+      expiresIn: this.getAccessTokenTtlSeconds(),
     });
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<number>('JWT_REFRESH_EXPIRATION') || 2592000, // 30 days
+      expiresIn: this.getRefreshTokenTtlSeconds(),
     });
 
     return {
