@@ -219,7 +219,7 @@ export class ConsultationsService {
     }
     const consultation = await this.consultationModel
       .findByIdAndUpdate(id, updateConsultationDto)
-      .select('_id combinaison timeSpent createdAt clientId')
+      .select('_id combinaison timeSpent nombredevues createdAt clientId')
       .populate('clientId', 'username firstName lastName phone')
       .populate('idjeu', 'startgameDate endgameDate status isActive')
       .exec();

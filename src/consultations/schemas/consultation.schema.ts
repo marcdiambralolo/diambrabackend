@@ -87,7 +87,7 @@ export class Consultation {
   country!: string;
 
   // 🔥 NOUVEAUX CHAMPS POUR LEARNING
-  
+
   // Statistiques Learning complètes
   @Prop({ type: LearningStats, default: null })
   learningStats!: LearningStats;
@@ -105,8 +105,8 @@ export class Consultation {
   matchesCompleted!: number;
 
   // Statut de la consultation
-  @Prop({ 
-    type: String, 
+  @Prop({
+    type: String,
     enum: ['pending', 'in_progress', 'completed', 'abandoned'],
     default: 'pending'
   })
@@ -127,6 +127,9 @@ export class Consultation {
   // Type de jeu (0: Nombre, 1: Couleur, 2: Image, 3: Lettre, 4: Global)
   @Prop({ default: 0 })
   tpsglobal!: number;
+
+  @Prop({ default: 0 })
+  nombredevues!: number;
 }
 
 export const ConsultationSchema = SchemaFactory.createForClass(Consultation);
