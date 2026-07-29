@@ -573,7 +573,7 @@ export class AdminService {
     // Récupérer toutes les consultations de cette édition
     const consultations = await this.consultationModel
       .find({ idjeu: lastEndedGameConfig._id })
-      .select('_id combinaison timeSpent createdAt clientId')
+      .select('_id combinaison nombredevues timeSpent createdAt clientId')
       .populate('clientId', 'username firstName lastName phone')
       .populate('idjeu', 'startgameDate endgameDate status isActive')
       .lean()
@@ -635,7 +635,7 @@ export class AdminService {
 
     const consultations = await this.consultationModel
       .find({ idjeu: lastEndedGameConfig._id })
-      .select('_id combinaison timeSpent createdAt clientId')
+      .select('_id combinaison nombredevues timeSpent createdAt clientId')
       .populate('clientId', 'username firstName lastName phone  country')
       .populate('idjeu', 'startgameDate endgameDate status isActive')
       .sort({ createdAt: -1 })
@@ -701,7 +701,7 @@ export class AdminService {
 
     const consultations = await this.consultationModel
       .find({ idjeu: lastEndedGameConfig._id })
-      .select('_id combinaison timeSpent createdAt clientId')
+      .select('_id combinaison nombredevues timeSpent createdAt clientId')
       .populate('clientId', 'username firstName lastName phone  country')
       .populate('idjeu', 'startgameDate endgameDate status isActive')
       .sort({ createdAt: -1 })
@@ -761,7 +761,7 @@ export class AdminService {
       this.consultationModel.countDocuments().lean().exec(),
       this.consultationModel
         .find()
-        .select('_id combinaison timeSpent createdAt clientId')
+        .select('_id combinaison nombredevues timeSpent createdAt clientId')
         .populate('clientId', 'username firstName lastName phone')
         .populate('idjeu', 'startgameDate endgameDate status isActive')
         .sort({ [sortBy]: sortDirection })

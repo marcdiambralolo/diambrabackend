@@ -15,7 +15,7 @@ export class ConsultationsService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(GameConfiguration.name)
     private gameConfigModel: Model<GameConfigurationDocument>,
-     @InjectModel(LearningConfiguration.name)
+    @InjectModel(LearningConfiguration.name)
     private learningConfigModel: Model<LearningConfigurationDocument>,
   ) { }
 
@@ -92,24 +92,24 @@ export class ConsultationsService {
    * Créer une nouvelle consultation
    */
   async create(clientId: string, createConsultationDto: any) {
-   
+
     const { idjeu } = createConsultationDto;
 
     // Vérifier et convertir les IDs en ObjectId
     if (!Types.ObjectId.isValid(clientId)) {
-        throw new Error(`Invalid clientId: ${clientId}`);
+      throw new Error(`Invalid clientId: ${clientId}`);
     }
-    
+
     if (!idjeu || !Types.ObjectId.isValid(idjeu)) {
-        throw new Error(`Invalid idjeu: ${idjeu}`);
+      throw new Error(`Invalid idjeu: ${idjeu}`);
     }
 
     const consultation = new this.consultationModel({
-        clientId: new Types.ObjectId(clientId),  // Conversion explicite
-        idjeu: new Types.ObjectId(idjeu),        // Conversion explicite
-        isPaid: true,
-        country: "Cote d'ivoire",
-        ...createConsultationDto
+      clientId: new Types.ObjectId(clientId),  // Conversion explicite
+      idjeu: new Types.ObjectId(idjeu),        // Conversion explicite
+      isPaid: true,
+      country: "Cote d'ivoire",
+      ...createConsultationDto
     });
 
     await consultation.save();
@@ -303,61 +303,61 @@ export class ConsultationsService {
   }
 
   // consultations.service.ts
-/**
- * Récupérer les consultations d'un utilisateur par idjeu avec les infos de l'édition
- */
-async findByClientAndIdjeu(
-  clientId: string,
-  idjeu: string,
-  query: { page?: number; limit?: number }
-): Promise<{
-  consultations: ConsultationDocument[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  edition: GameConfigurationDocument | null; // 🔥 Ajout des infos de l'édition
-}> {
-  const { page = 1, limit = 84600 } = query;
-  const skip = (page - 1) * limit;
+  /**
+   * Récupérer les consultations d'un utilisateur par idjeu avec les infos de l'édition
+   */
+  async findByClientAndIdjeu(
+    clientId: string,
+    idjeu: string,
+    query: { page?: number; limit?: number }
+  ): Promise<{
+    consultations: ConsultationDocument[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    edition: GameConfigurationDocument | null; // 🔥 Ajout des infos de l'édition
+  }> {
+    const { page = 1, limit = 84600 } = query;
+    const skip = (page - 1) * limit;
 
-  // 🔥 Récupérer les informations de l'édition
-  const edition = await this.gameConfigModel.findById(idjeu).lean().exec();
-  
-  if (!edition) {
-    throw new NotFoundException(`Edition with id ${idjeu} not found`);
+    // 🔥 Récupérer les informations de l'édition
+    const edition = await this.gameConfigModel.findById(idjeu).lean().exec();
+
+    if (!edition) {
+      throw new NotFoundException(`Edition with id ${idjeu} not found`);
+    }
+
+    const filter: any = {
+      clientId: clientId,
+      idjeu: idjeu
+    };
+
+    const [consultations, total] = await Promise.all([
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison timeSpent createdAt clientId')
+        .populate('clientId', 'username firstName lastName phone email country')
+        .populate('idjeu', 'startgameDate endgameDate status isActive winningCombination')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean()
+        .exec(),
+      this.consultationModel.countDocuments(filter).exec(),
+    ]);
+
+    // Formater les consultations
+
+    return {
+      consultations: consultations as any,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      edition: edition as unknown as GameConfigurationDocument, // 🔥 Retourner l'édition
+    };
   }
-
-  const filter: any = {
-    clientId: clientId,
-    idjeu: idjeu
-  };
-
-  const [consultations, total] = await Promise.all([
-    this.consultationModel
-      .find(filter)
-      .select('_id combinaison timeSpent createdAt clientId')
-      .populate('clientId', 'username firstName lastName phone email country')
-      .populate('idjeu', 'startgameDate endgameDate status isActive winningCombination')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec(),
-    this.consultationModel.countDocuments(filter).exec(),
-  ]);
-
-  // Formater les consultations
-
-  return {
-    consultations: consultations as any,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-    edition: edition as unknown as GameConfigurationDocument, // 🔥 Retourner l'édition
-  };
-}
 
   /**
    * Obtenir les statistiques des consultations
@@ -398,108 +398,108 @@ async findByClientAndIdjeu(
   }
 
   // consultations.service.ts
-// consultations.service.ts
-// consultations.service.ts
-async findByClient(
-  userId: string, 
-  query: { page?: number; limit?: number }
-): Promise<{
-  consultations: any[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  editions: any[];
-}> {
-  const { page = 1, limit = 10 } = query;
-  const skip = (page - 1) * limit;
+  // consultations.service.ts
+  // consultations.service.ts
+  async findByClient(
+    userId: string,
+    query: { page?: number; limit?: number }
+  ): Promise<{
+    consultations: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    editions: any[];
+  }> {
+    const { page = 1, limit = 10 } = query;
+    const skip = (page - 1) * limit;
 
-  const filter: any = { clientId: userId };
+    const filter: any = { clientId: userId };
 
-  const [consultationsDocs, total] = await Promise.all([
-    this.consultationModel
-      .find(filter)
-      .select('_id combinaison timeSpent createdAt clientId idjeu')
-      .populate('clientId', 'username firstName lastName phone email country')
-      .populate('idjeu', 'startgameDate endgameDate status isActive winningCombination')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .lean() // On garde lean()
-      .exec(),
-    this.consultationModel.countDocuments(filter).exec(),
-  ]);
+    const [consultationsDocs, total] = await Promise.all([
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison timeSpent createdAt clientId idjeu')
+        .populate('clientId', 'username firstName lastName phone email country')
+        .populate('idjeu', 'startgameDate endgameDate status isActive winningCombination')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean() // On garde lean()
+        .exec(),
+      this.consultationModel.countDocuments(filter).exec(),
+    ]);
 
-  // 🔥 Solution magique : convertir en JSON et reparser
-  const consultations = JSON.parse(JSON.stringify(consultationsDocs));
+    // 🔥 Solution magique : convertir en JSON et reparser
+    const consultations = JSON.parse(JSON.stringify(consultationsDocs));
 
-  // Le reste du code reste identique...
-  const getObjectIdString = (id: any): string => {
-    if (!id) return '';
-    if (typeof id === 'string') return id;
-    return String(id);
-  };
+    // Le reste du code reste identique...
+    const getObjectIdString = (id: any): string => {
+      if (!id) return '';
+      if (typeof id === 'string') return id;
+      return String(id);
+    };
 
-  // Extraire les IDs uniques des éditions
-  const editionIds = [...new Set(
-    consultations
-      .map((c: any )=> c.idjeu?._id)
-      .filter(Boolean)
-  )];
+    // Extraire les IDs uniques des éditions
+    const editionIds = [...new Set(
+      consultations
+        .map((c: any) => c.idjeu?._id)
+        .filter(Boolean)
+    )];
 
-  // Récupérer les informations des éditions
-  let editionsData: any[] = [];
-  if (editionIds.length > 0) {
-    const editionsDocs = await this.gameConfigModel
-      .find({ _id: { $in: editionIds } })
-      .select('_id startgameDate endgameDate status isActive winningCombination')
-      .lean()
-      .exec();
-    
-    editionsData = JSON.parse(JSON.stringify(editionsDocs));
-  }
+    // Récupérer les informations des éditions
+    let editionsData: any[] = [];
+    if (editionIds.length > 0) {
+      const editionsDocs = await this.gameConfigModel
+        .find({ _id: { $in: editionIds } })
+        .select('_id startgameDate endgameDate status isActive winningCombination')
+        .lean()
+        .exec();
 
-  // Créer un map des éditions par ID
-  const editionsMap = new Map();
-  editionsData.forEach(edition => {
-    const editionId = getObjectIdString(edition._id);
-    editionsMap.set(editionId, {
-      id: editionId,
-      startDate: edition.startgameDate,
-      endDate: edition.endgameDate,
-      status: edition.status,
-      isActive: edition.isActive,
-      winningCombination: edition.winningCombination || null,
+      editionsData = JSON.parse(JSON.stringify(editionsDocs));
+    }
+
+    // Créer un map des éditions par ID
+    const editionsMap = new Map();
+    editionsData.forEach(edition => {
+      const editionId = getObjectIdString(edition._id);
+      editionsMap.set(editionId, {
+        id: editionId,
+        startDate: edition.startgameDate,
+        endDate: edition.endgameDate,
+        status: edition.status,
+        isActive: edition.isActive,
+        winningCombination: edition.winningCombination || null,
+      });
     });
-  });
 
-  // Formater les consultations
-  const formattedConsultations = consultations.map((consultation: any) => ({
-    _id: getObjectIdString(consultation._id),
-    combinaison: consultation.combinaison,
-    timeSpent: consultation.timeSpent,
-    createdAt: consultation.createdAt,
-    clientId: consultation.clientId ? {
-      _id: getObjectIdString(consultation.clientId._id),
-      username: consultation.clientId.username || 'Anonyme',
-      firstName: consultation.clientId.firstName || '',
-      lastName: consultation.clientId.lastName || '',
-      phone: consultation.clientId.phone || '',
-      email: consultation.clientId.email || '',
-      country: consultation.clientId.country || '',
-    } : null,
-    edition: consultation.idjeu?._id ? editionsMap.get(getObjectIdString(consultation.idjeu._id)) || null : null,
-  }));
+    // Formater les consultations
+    const formattedConsultations = consultations.map((consultation: any) => ({
+      _id: getObjectIdString(consultation._id),
+      combinaison: consultation.combinaison,
+      timeSpent: consultation.timeSpent,
+      createdAt: consultation.createdAt,
+      clientId: consultation.clientId ? {
+        _id: getObjectIdString(consultation.clientId._id),
+        username: consultation.clientId.username || 'Anonyme',
+        firstName: consultation.clientId.firstName || '',
+        lastName: consultation.clientId.lastName || '',
+        phone: consultation.clientId.phone || '',
+        email: consultation.clientId.email || '',
+        country: consultation.clientId.country || '',
+      } : null,
+      edition: consultation.idjeu?._id ? editionsMap.get(getObjectIdString(consultation.idjeu._id)) || null : null,
+    }));
 
-  return {
-    consultations: formattedConsultations,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-    editions: Array.from(editionsMap.values()),
-  };
-}
+    return {
+      consultations: formattedConsultations,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      editions: Array.from(editionsMap.values()),
+    };
+  }
   async findManyByIds(ids: string[]) {
     if (!ids.length) {
       return [];
@@ -651,227 +651,227 @@ async findByClient(
     };
   }
 
- 
+
 
   async getEndedLearningConsultations(options: {
-  page: number;
-  limit: number;
-}): Promise<EndedLearningConsultationsResult> {
-  const { page, limit } = options;
-  const skip = (page - 1) * limit;
+    page: number;
+    limit: number;
+  }): Promise<EndedLearningConsultationsResult> {
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
 
-  // 1. Trouver la dernière édition terminée
-  const endedGameConfig = await this.learningConfigModel
-    .findOne({ status: 'ended' })
-    .sort({ updatedAt: -1 })
-    .lean()
-    .exec();
+    // 1. Trouver la dernière édition terminée
+    const endedGameConfig = await this.learningConfigModel
+      .findOne({ status: 'ended' })
+      .sort({ updatedAt: -1 })
+      .lean()
+      .exec();
 
-  if (!endedGameConfig) {
+    if (!endedGameConfig) {
+      return {
+        consultations: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+        activeEdition: null,
+        winners: null,
+        statistics: null,
+      };
+    }
+
+    const filter = { idjeu: endedGameConfig._id };
+
+    // 2. Récupérer toutes les consultations pour l'édition
+    const [total, consultations, allConsultations] = await Promise.all([
+      this.consultationModel.countDocuments(filter).exec(),
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison timeSpent nombredevues createdAt clientId')
+        .populate<{ clientId: any }>('clientId', 'username nom prenoms firstName lastName phone email country')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.consultationModel
+        .find(filter)
+        .select('_id combinaison nombredevues timeSpent createdAt clientId')
+        .populate<{ clientId: any }>('clientId', 'username nom prenoms firstName lastName phone email country')
+        .lean()
+        .exec()
+    ]);
+
+    // 3. Formater les consultations
+    const formattedConsultations = consultations.map(consultation => this.formatConsultation(consultation));
+
+    // 4. Calculer les gagnants et statistiques (basés sur le temps)
+    let winners = null;
+    let statistics = null;
+
+    if (allConsultations.length > 0) {
+      const formattedStatsData = allConsultations.map(item => this.formatConsultation(item));
+      winners = this.calculateLearningWinners(formattedStatsData);
+      statistics = this.calculateLearningStatistics(formattedStatsData, winners);
+    }
+
     return {
-      consultations: [],
-      total: 0,
+      consultations: formattedConsultations,
+      activeEdition: {
+        id: endedGameConfig._id.toString(),
+        startDate: endedGameConfig.startgameDate,
+        endDate: endedGameConfig.endgameDate,
+        status: endedGameConfig.status,
+        isActive: endedGameConfig.isActive,
+      },
+      winners,
+      statistics,
+      total,
       page,
       limit,
-      totalPages: 0,
-      activeEdition: null,
-      winners: null,
-      statistics: null,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
-  const filter = { idjeu: endedGameConfig._id };
+  /**
+   * Formate une consultation
+   */
+  private formatConsultation(consultation: any): any {
+    const consultationId = this.getObjectIdString(consultation._id);
+    const client = consultation.clientId;
+    let formattedClient = null;
 
-  // 2. Récupérer toutes les consultations pour l'édition
-  const [total, consultations, allConsultations] = await Promise.all([
-    this.consultationModel.countDocuments(filter).exec(),
-    this.consultationModel
-      .find(filter)
-      .select('_id combinaison timeSpent createdAt clientId')
-      .populate<{ clientId: any }>('clientId', 'username nom prenoms firstName lastName phone email country')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .exec(),
-    this.consultationModel
-      .find(filter)
-      .select('_id combinaison timeSpent createdAt clientId')
-      .populate<{ clientId: any }>('clientId', 'username nom prenoms firstName lastName phone email country')
-      .lean()
-      .exec()
-  ]);
-
-  // 3. Formater les consultations
-  const formattedConsultations = consultations.map(consultation => this.formatConsultation(consultation));
-
-  // 4. Calculer les gagnants et statistiques (basés sur le temps)
-  let winners = null;
-  let statistics = null;
-
-  if (allConsultations.length > 0) {
-    const formattedStatsData = allConsultations.map(item => this.formatConsultation(item));
-    winners = this.calculateLearningWinners(formattedStatsData);
-    statistics = this.calculateLearningStatistics(formattedStatsData, winners);
-  }
-
-  return {
-    consultations: formattedConsultations,
-    activeEdition: {
-      id: endedGameConfig._id.toString(),
-      startDate: endedGameConfig.startgameDate,
-      endDate: endedGameConfig.endgameDate,
-      status: endedGameConfig.status,
-      isActive: endedGameConfig.isActive,
-    },
-    winners,
-    statistics,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
-
-/**
- * Formate une consultation
- */
-private formatConsultation(consultation: any): any {
-  const consultationId = this.getObjectIdString(consultation._id);
-  const client = consultation.clientId;
-  let formattedClient = null;
-
-  if (client) {
-    formattedClient = {
-      _id: this.getObjectIdString(client._id),
-      username: client.username || 'Anonyme',
-      firstName: client.firstName || '',
-      lastName: client.lastName || '',
-      phone: client.phone || '',
-      email: client.email || '',
-      country: client.country || '',
-    };
-  }
-
-  return {
-    ...consultation,
-    _id: consultationId,
-    clientId: formattedClient,
-    timeSpent: consultation.timeSpent || 0,
-  };
-}
-
-/**
- * Calcule les gagnants d'une édition Learning (basé sur le temps le plus petit)
- */
-private calculateLearningWinners(consultations: any[]): LearningWinnersData {
-  // Filtrer les consultations valides
-  const validConsultations = consultations.filter(c => c.clientId && c.timeSpent > 0);
-  
-  // Grouper par client pour garder le meilleur temps de chaque joueur
-  const bestTimesByUser = new Map<string, any>();
-  
-  validConsultations.forEach(consultation => {
-    const clientId = this.getObjectIdString(consultation.clientId._id);
-    const existing = bestTimesByUser.get(clientId);
-    
-    if (!existing || consultation.timeSpent < existing.timeSpent) {
-      bestTimesByUser.set(clientId, {
-        consultationId: this.getObjectIdString(consultation._id),
-        clientId,
-        username: consultation.clientId.username || 'Anonyme',
-        firstName: consultation.clientId.firstName || '',
-        lastName: consultation.clientId.lastName || '',
-        phone: consultation.clientId.phone || '',
-        email: consultation.clientId.email || '',
-        country: consultation.clientId.country || '',
-        timeSpent: consultation.timeSpent,
-        combination: consultation.combinaison,
-        createdAt: consultation.createdAt,
-      });
+    if (client) {
+      formattedClient = {
+        _id: this.getObjectIdString(client._id),
+        username: client.username || 'Anonyme',
+        firstName: client.firstName || '',
+        lastName: client.lastName || '',
+        phone: client.phone || '',
+        email: client.email || '',
+        country: client.country || '',
+      };
     }
-  });
 
-  // Convertir en tableau et trier par temps (du plus petit au plus grand)
-  const winners = Array.from(bestTimesByUser.values())
-    .sort((a, b) => a.timeSpent - b.timeSpent)
-    .map((winner, index) => ({
-      ...winner,
-      rank: index + 1,
-    }));
+    return {
+      ...consultation,
+      _id: consultationId,
+      clientId: formattedClient,
+      timeSpent: consultation.timeSpent || 0,
+    };
+  }
 
-  return {
-    winners,
-    totalParticipants: bestTimesByUser.size,
-  };
-}
+  /**
+   * Calcule les gagnants d'une édition Learning (basé sur le temps le plus petit)
+   */
+  private calculateLearningWinners(consultations: any[]): LearningWinnersData {
+    // Filtrer les consultations valides
+    const validConsultations = consultations.filter(c => c.clientId && c.timeSpent > 0);
 
-/**
- * Calcule les statistiques complètes de l'édition Learning
- */
-private calculateLearningStatistics(consultations: any[], winners: LearningWinnersData): LearningStatisticsData {
-  const validConsultations = consultations.filter(c => c.clientId && c.timeSpent > 0);
-  const times = validConsultations.map(c => c.timeSpent);
-  
-  // Top participants (ceux qui ont joué le plus)
-  const clientParticipation = new Map<string, { username: string; count: number; bestTime: number }>();
-  
-  validConsultations.forEach(c => {
-    const clientId = this.getObjectIdString(c.clientId._id);
-    const username = c.clientId.username || 'Anonyme';
-    const existing = clientParticipation.get(clientId);
-    
-    if (!existing) {
-      clientParticipation.set(clientId, {
-        username,
-        count: 1,
-        bestTime: c.timeSpent,
-      });
-    } else {
-      existing.count++;
-      if (c.timeSpent < existing.bestTime) {
-        existing.bestTime = c.timeSpent;
+    // Grouper par client pour garder le meilleur temps de chaque joueur
+    const bestTimesByUser = new Map<string, any>();
+
+    validConsultations.forEach(consultation => {
+      const clientId = this.getObjectIdString(consultation.clientId._id);
+      const existing = bestTimesByUser.get(clientId);
+
+      if (!existing || consultation.timeSpent < existing.timeSpent) {
+        bestTimesByUser.set(clientId, {
+          consultationId: this.getObjectIdString(consultation._id),
+          clientId,
+          username: consultation.clientId.username || 'Anonyme',
+          firstName: consultation.clientId.firstName || '',
+          lastName: consultation.clientId.lastName || '',
+          phone: consultation.clientId.phone || '',
+          email: consultation.clientId.email || '',
+          country: consultation.clientId.country || '',
+          timeSpent: consultation.timeSpent,
+          combination: consultation.combinaison,
+          createdAt: consultation.createdAt,
+        });
       }
-    }
-  });
+    });
 
-  const topParticipants = Array.from(clientParticipation.entries())
-    .map(([clientId, data]) => ({
-      clientId,
-      username: data.username,
-      participations: data.count,
-      bestTime: data.bestTime,
-    }))
-    .sort((a, b) => b.participations - a.participations)
-    .slice(0, 10);
+    // Convertir en tableau et trier par temps (du plus petit au plus grand)
+    const winners = Array.from(bestTimesByUser.values())
+      .sort((a, b) => a.timeSpent - b.timeSpent)
+      .map((winner, index) => ({
+        ...winner,
+        rank: index + 1,
+      }));
 
-  return {
-    totalConsultations: consultations.length,
-    totalParticipants: validConsultations.length,
-    uniqueParticipants: clientParticipation.size,
-    averageTimeSpent: times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0,
-    fastestTime: times.length > 0 ? Math.min(...times) : 0,
-    slowestTime: times.length > 0 ? Math.max(...times) : 0,
-    timeDistribution: {
-      under30s: times.filter(t => t < 30).length,
-      under60s: times.filter(t => t >= 30 && t < 60).length,
-      under120s: times.filter(t => t >= 60 && t < 120).length,
-      over120s: times.filter(t => t >= 120).length,
-    },
-    topParticipants,
-    winners,
-  };
-}
+    return {
+      winners,
+      totalParticipants: bestTimesByUser.size,
+    };
+  }
 
-/**
- * Convertit un ObjectId en string
- */
-private getObjectIdString(id: any): string {
-  if (!id) return '';
-  if (typeof id === 'object' && 'toString' in id) return id.toString();
-  if (typeof id === 'string') return id;
-  return String(id);
-}
+  /**
+   * Calcule les statistiques complètes de l'édition Learning
+   */
+  private calculateLearningStatistics(consultations: any[], winners: LearningWinnersData): LearningStatisticsData {
+    const validConsultations = consultations.filter(c => c.clientId && c.timeSpent > 0);
+    const times = validConsultations.map(c => c.timeSpent);
+
+    // Top participants (ceux qui ont joué le plus)
+    const clientParticipation = new Map<string, { username: string; count: number; bestTime: number }>();
+
+    validConsultations.forEach(c => {
+      const clientId = this.getObjectIdString(c.clientId._id);
+      const username = c.clientId.username || 'Anonyme';
+      const existing = clientParticipation.get(clientId);
+
+      if (!existing) {
+        clientParticipation.set(clientId, {
+          username,
+          count: 1,
+          bestTime: c.timeSpent,
+        });
+      } else {
+        existing.count++;
+        if (c.timeSpent < existing.bestTime) {
+          existing.bestTime = c.timeSpent;
+        }
+      }
+    });
+
+    const topParticipants = Array.from(clientParticipation.entries())
+      .map(([clientId, data]) => ({
+        clientId,
+        username: data.username,
+        participations: data.count,
+        bestTime: data.bestTime,
+      }))
+      .sort((a, b) => b.participations - a.participations)
+      .slice(0, 10);
+
+    return {
+      totalConsultations: consultations.length,
+      totalParticipants: validConsultations.length,
+      uniqueParticipants: clientParticipation.size,
+      averageTimeSpent: times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0,
+      fastestTime: times.length > 0 ? Math.min(...times) : 0,
+      slowestTime: times.length > 0 ? Math.max(...times) : 0,
+      timeDistribution: {
+        under30s: times.filter(t => t < 30).length,
+        under60s: times.filter(t => t >= 30 && t < 60).length,
+        under120s: times.filter(t => t >= 60 && t < 120).length,
+        over120s: times.filter(t => t >= 120).length,
+      },
+      topParticipants,
+      winners,
+    };
+  }
+
+  /**
+   * Convertit un ObjectId en string
+   */
+  private getObjectIdString(id: any): string {
+    if (!id) return '';
+    if (typeof id === 'object' && 'toString' in id) return id.toString();
+    if (typeof id === 'string') return id;
+    return String(id);
+  }
 
   /**
    * Calcule les gagnants d'une édition (version corrigée)
