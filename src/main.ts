@@ -55,7 +55,15 @@ async function bootstrap() {
     allowedOrigins.push(...fromEnv);
   }
 
-  allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');
+  // Ajout de diambrapuzzle.com
+  allowedOrigins.push(
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'https://diambrapuzzle.com',
+    'https://www.diambrapuzzle.com',
+    'http://diambrapuzzle.com',
+    'http://www.diambrapuzzle.com'
+  );
 
   app.enableCors({
     origin: allowedOrigins,
