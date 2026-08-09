@@ -62,7 +62,9 @@ async function bootstrap() {
     'https://diambrapuzzle.com',
     'https://www.diambrapuzzle.com',
     'http://diambrapuzzle.com',
-    'http://www.diambrapuzzle.com'
+    'http://www.diambrapuzzle.com',
+    'http://lolomaths.com',
+    'http://www.lolomaths.com'
   );
 
   app.enableCors({
